@@ -46,7 +46,7 @@ from pyanaconda.iutil import startProgram
 from pyanaconda import network
 from pyanaconda import nm
 
-from gi.repository import GLib, GObject, Pango, Gio, NM, NMClient
+from gi.repository import GLib, GObject, Pango, Gio, NM
 import dbus
 import dbus.service
 # Used for ascii_letters and hexdigits constants
@@ -352,7 +352,7 @@ class NetworkControlBox(GObject.GObject):
         # to prevent UI update signals races
         self._updating_device = False
 
-        self.client = NMClient.Client.new()
+        self.client = NM.Client.new()
 
         # devices list
         # limited to wired and wireless
@@ -380,7 +380,7 @@ class NetworkControlBox(GObject.GObject):
                                                              self.on_device_off_toggled)
         self.builder.get_object("device_wireless_off_switch").connect("notify::active",
                                                              self.on_device_off_toggled)
-        self.client.connect("notify::%s" % NMClient.CLIENT_WIRELESS_ENABLED,
+        self.client.connect("notify::%s" % NM.CLIENT_WIRELESS_ENABLED,
                             self.on_wireless_enabled)
 
         self.builder.get_object("button_wired_options").connect("clicked",
@@ -389,7 +389,7 @@ class NetworkControlBox(GObject.GObject):
                                                               self.on_edit_connection)
         self.entry_hostname = self.builder.get_object("entry_hostname")
 
-        self.client.connect("notify::%s" % NMClient.CLIENT_STATE,
+        self.client.connect("notify::%s" % NM.CLIENT_STATE,
                             self.on_nm_state_changed)
 
     @property
