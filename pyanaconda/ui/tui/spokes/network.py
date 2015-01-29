@@ -86,7 +86,7 @@ class NetworkSpoke(EditTUISpoke):
     def _summary_text(self):
         """Devices cofiguration shown to user."""
         msg = ""
-        activated_devs = nm.nm_activated_devices()
+        activated_devs = nm.nm_activated_ifaces()
         for name in self.supported_devices:
             if name in activated_devs:
                 msg += self._activated_device_msg(name)
@@ -99,28 +99,34 @@ class NetworkSpoke(EditTUISpoke):
         msg = _("Wired (%(interface_name)s) connected\n") \
                 % {"interface_name": devname}
 
-        ipv4config = nm.nm_device_ip_config(devname, version=4)
-        ipv6config = nm.nm_device_ip_config(devname, version=6)
+        device = nm.client.get_device_by_iface(devname)
+        if not device:
+            return msg
 
-        if ipv4config and ipv4config[0]:
-            addr_str, prefix, gateway_str = ipv4config[0][0]
-            netmask_str = network.prefix2netmask(prefix)
-            dnss_str = ",".join(ipv4config[1])
+        ipv4config = device.get_ip4_config()
+        ipv6config = device.get_ip6_config()
+
+        if ipv4config:
+            addr_str = ",".join("%s/%d" % (a.get_address(),a.get_prefix())
+                                           for a in ipv4config.get_addresses())
+            gateway_str = ipv4config.get_gateway()
+            dnss_str = ",".join(ipv4config.get_nameservers())
         else:
-            addr_str = dnss_str = gateway_str = netmask_str = ""
-        msg += _(" IPv4 Address: %(addr)s Netmask: %(netmask)s Gateway: %(gateway)s\n") % \
-                {"addr": addr_str, "netmask": netmask_str, "gateway": gateway_str}
+            addr_str = dnss_str = gateway_str = ""
+        msg += _(" IPv4 Address: %(addr)s Gateway: %(gateway)s\n") % \
+                {"addr": addr_str, "gateway": gateway_str}
         msg += _(" DNS: %s\n") % dnss_str
 
-        if ipv6config and ipv6config[0]:
-            for ipv6addr in ipv6config[0]:
-                addr_str, prefix, gateway_str = ipv6addr
-                # Do not display link-local addresses
-                if not addr_str.startswith("fe80:"):
-                    msg += _(" IPv6 Address: %(addr)s/%(prefix)d\n") % \
-                            {"addr": addr_str, "prefix": prefix}
+        if ipv6config:
+            addr6_str = ",".join("%s/%d" % (a.get_address(),a.get_prefix())
+                                            for a in ipv6config.get_addresses()
+                                            # Do not display link-local addresses
+                                            if not a.get_address().startswith("fe80:"))
 
-            dnss_str = ",".join(ipv6config[1])
+            if addr6_str:
+                msg += _(" IPv6 Address: %s\n") % addr6_str
+
+            dnss_str = ",".join(ipv6config.get_nameservers())
 
         return msg
 
@@ -223,7 +229,7 @@ class NetworkSpoke(EditTUISpoke):
             nd = network.ksdata_from_ifcfg(name)
             if not nd:
                 continue
-            if name in nm.nm_activated_devices():
+            if name in nm.nm_activated_ifaces():
                 nd.activate = True
             self.data.network.network.append(nd)
 

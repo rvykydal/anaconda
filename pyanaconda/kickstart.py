@@ -765,7 +765,7 @@ class Iscsi(commands.iscsi.F17_Iscsi):
         mode = blivet.iscsi.iscsi().mode
         if mode == "none":
             if tg.iface:
-                blivet.iscsi.iscsi().create_interfaces(nm.nm_activated_devices())
+                blivet.iscsi.iscsi().create_interfaces(nm.nm_activated_ifaces())
         elif ((mode == "bind" and not tg.iface)
               or (mode == "default" and tg.iface)):
             raise KickstartValueError(formatErrorMsg(self.lineno,

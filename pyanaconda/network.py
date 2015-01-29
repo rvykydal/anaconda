@@ -112,13 +112,11 @@ def sanityCheckHostname(hostname):
 def getIPs():
     ipv4_addresses = []
     ipv6_addresses = []
-    for devname in nm.nm_activated_devices():
-        try:
-            ipv4_addresses += nm.nm_device_ip_addresses(devname, version=4)
-            ipv6_addresses += nm.nm_device_ip_addresses(devname, version=6)
-        except (dbus.DBusException, ValueError) as e:
-            log.warning("Got an exception trying to get the ip addr "
-                        "of %s: %s", devname, e)
+    for device in nm.nm_activated_devices():
+        ipv4_addresses += [a.get_address()
+                           for a in device.get_ip4_config().get_addresses()]
+        ipv6_addresses += [a.get_address()
+                           for a in device.get_ip6_config().get_addresses()]
     # prefer IPv4 addresses to IPv6 addresses
     return ipv4_addresses + ipv6_addresses
 
@@ -160,8 +158,8 @@ def getHostname():
 
     # First address (we prefer ipv4) of last device (as it used to be) wins
     for dev in nm.nm_activated_devices():
-        addrs = (nm.nm_device_ip_addresses(dev, version=4) +
-                 nm.nm_device_ip_addresses(dev, version=6))
+        addrs = [a.get_address() for a in dev.get_ip4_config().get_addresses()] +\
+                [a.get_address() for a in dev.get_ip6_config().get_addresses()]
         for ipaddr in addrs:
             try:
                 hinfo = socket.gethostbyaddr(ipaddr)
@@ -1279,7 +1277,7 @@ def wait_for_network_devices(devices, timeout=constants.NETWORK_CONNECTION_TIMEO
     i = 0
     log.debug("waiting for connection of devices %s for iscsi", devices)
     while  i < timeout:
-        if not devices - set(nm.nm_activated_devices()):
+        if not devices - set(nm.nm_activated_ifaces()):
             return True
         i += 1
         time.sleep(1)
@@ -1330,7 +1328,7 @@ def status_message():
     elif state == NM.State.DISCONNECTING:
         msg = _("Disconnecting...")
     else:
-        active_devs = nm.nm_activated_devices()
+        active_devs = nm.nm_activated_ifaces()
         if active_devs:
 
             slaves = {}

@@ -785,18 +785,19 @@ class NetworkControlBox(GObject.GObject):
             dt = "wireless"
 
         if dev_cfg.device:
-            try:
-                ipv4cfg = nm.nm_device_ip_config(dev_cfg.device.get_iface(), version=4)
-                ipv6cfg = nm.nm_device_ip_config(dev_cfg.device.get_iface(), version=6)
-            except nm.UnknownDeviceError:
-                ipv4cfg = ipv6cfg = None
+            ipv4cfg = dev_cfg.device.get_ip4_config()
+            ipv6cfg = dev_cfg.device.get_ip6_config()
         else:
             ipv4cfg = ipv6cfg = None
 
-        if ipv4cfg and ipv4cfg[0]:
-            addr_str, prefix, gateway_str = ipv4cfg[0][0]
-            netmask_str = network.prefix2netmask(prefix)
-            dnss_str = " ".join(ipv4cfg[1])
+        if ipv4cfg:
+            #addr_str = ",".join(a.get_address() for a in ipv4cfg.get_addresses())
+            # TODO: remove prefix
+            addr_str = ",".join("%s/%d" % (a.get_address(),a.get_prefix())
+                                           for a in ipv4cfg.get_addresses())
+            netmask_str = None
+            gateway_str = ipv4cfg.get_gateway()
+            dnss_str = ",".join(ipv4cfg.get_nameservers())
         else:
             addr_str = dnss_str = gateway_str = netmask_str = None
         self._set_device_info_value(dt, "ipv4", addr_str)
@@ -806,12 +807,11 @@ class NetworkControlBox(GObject.GObject):
             self._set_device_info_value(dt, "subnet", netmask_str)
 
         addr6_str = ""
-        if ipv6cfg and ipv6cfg[0]:
-            for ipv6addr in ipv6cfg[0]:
-                addr_str, prefix, gateway_str = ipv6addr
-                # Do not display link-local addresses
-                if not addr_str.startswith("fe80:"):
-                    addr6_str += "%s/%d\n" % (addr_str, prefix)
+        if ipv6cfg:
+            addr6_str = ",".join("%s/%d" % (a.get_address(),a.get_prefix())
+                                            for a in ipv6cfg.get_addresses()
+                                            # Do not display link-local addresses
+                                            if not a.get_address().startswith("fe80:"))
 
         self._set_device_info_value(dt, "ipv6", addr6_str.strip() or None)
 
@@ -1556,7 +1556,7 @@ def _update_network_data(data, ncb):
         nd = network.ksdata_from_ifcfg(devname, dev_cfg.con_uuid)
         if not nd:
             continue
-        if devname in nm.nm_activated_devices():
+        if devname in nm.nm_activated_ifaces():
             nd.activate = True
         data.network.network.append(nd)
     hostname = ncb.hostname

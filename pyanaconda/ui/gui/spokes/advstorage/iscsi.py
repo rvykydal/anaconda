@@ -195,7 +195,7 @@ class ISCSIDialog(GUIObject):
             self.iscsi.delete_interfaces()
         elif (self.iscsi.mode == "bind"
               or self.iscsi.mode == "none" and bind):
-            activated = set(nm.nm_activated_devices())
+            activated = set(nm.nm_activated_ifaces())
             created = set(self.iscsi.ifaces.values())
             self.iscsi.create_interfaces(activated - created)
 

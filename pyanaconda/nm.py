@@ -39,6 +39,8 @@ supported_device_types = [
     NM.DeviceType.TEAM,
 ]
 
+client = NM.Client.new()
+
 class UnknownDeviceError(ValueError):
     """Device of specified name was not found by NM"""
     def __str__(self):
@@ -130,15 +132,13 @@ def nm_state():
     """Return state of NetworkManager
 
     :return: state of NetworkManager
-    :rtype: integer
+    :rtype: NM.State
     """
-    prop = _get_property("/org/freedesktop/NetworkManager", "State")
-
-    # If this is an image/dir install assume the network is up
-    if not prop and (flags.imageInstall or flags.dirInstall):
+    state = client.get_state()
+    if not state and (flags.imageInstall or flags.dirInstall):
         return NM.State.CONNECTED_GLOBAL
     else:
-        return prop
+        return state
 
 # FIXME - use just GLOBAL? There is some connectivity checking
 # for GLOBAL in NM (nm_connectivity_get_connected), not sure if
@@ -185,34 +185,27 @@ def nm_devices():
 
     return interfaces
 
-def nm_activated_devices():
-    """Return names of activated network devices.
+def nm_activated_ifaces():
+    ifaces = []
+    for device in nm_activated_devices():
+        iface = device.get_ip_iface() or device.get_iface()
+        if iface:
+            ifaces.append(iface)
+    return ifaces
 
-    :return: names of activated network devices
-    :rtype: list of strings
+def nm_activated_devices():
+    """Return activated network devices.
+
+    :return: activated network devices
+    :rtype: list of NM device objects
     """
 
-    interfaces = []
-
-    active_connections = _get_property("/org/freedesktop/NetworkManager", "ActiveConnections")
-    if not active_connections:
-        return []
-
-    for ac in active_connections:
-        try:
-            state = _get_property(ac, "State", ".Connection.Active")
-        except UnknownMethodGetError:
-            continue
-        if state != NM.ActiveConnectionState.ACTIVATED:
-            continue
-        devices = _get_property(ac, "Devices", ".Connection.Active")
-        for device in devices:
-            iface = _get_property(device, "IpInterface", ".Device")
-            if not iface:
-                iface = _get_property(device, "Interface", ".Device")
-            interfaces.append(iface)
-
-    return interfaces
+    devices = []
+    for ac in client.get_active_connections():
+        if ac.get_state() == NM.ActiveConnectionState.ACTIVATED:
+            for device in ac.get_devices():
+                devices.append(device)
+    return devices
 
 def _get_object_iface_names(object_path):
     connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
@@ -418,26 +411,6 @@ def nm_device_carrier(name):
     """
     return nm_device_property(name, "Carrier")
 
-def nm_device_ip_addresses(name, version=4):
-    """Return IP addresses of device in ACTIVATED state.
-
-       :param name: name of device
-       :type name: str
-       :param version: version of IP protocol (value 4 or 6)
-       :type version: int
-       :return: IP addresses of device, empty list if device is not
-                in ACTIVATED state
-       :rtype: list of strings
-       :raise UnknownDeviceError: if device is not found
-       :raise PropertyNotFoundError: if IP configuration is not found
-    """
-    retval = []
-    config = nm_device_ip_config(name, version)
-    if config:
-        retval = [addrs[0] for addrs in config[0]]
-
-    return retval
-
 def nm_device_active_ssid(name):
     """Return ssid of device's active access point.
 
@@ -460,74 +433,6 @@ def nm_device_active_ssid(name):
     ssid = "".join(chr(b) for b in ssid_ay)
 
     return ssid
-
-def nm_device_ip_config(name, version=4):
-    """Return IP configurations of device in ACTIVATED state.
-
-       :param name: name of device
-       :type name: str
-       :param version: version of IP protocol (value 4 or 6)
-       :type version: int
-       :return: IP configuration of device, empty list if device is not
-                in ACTIVATED state
-       :rtype: [[[address1, prefix1, gateway1], [address2, prefix2, gateway2], ...],
-                [nameserver1, nameserver2]]
-               addressX, gatewayX: string
-               prefixX: int
-       :raise UnknownDeviceError: if device is not found
-       :raise PropertyNotFoundError: if ip configuration is not found
-    """
-    state = nm_device_property(name, "State")
-    if state != NM.DeviceState.ACTIVATED:
-        return []
-
-    if version == 4:
-        dbus_iface = ".IP4Config"
-        prop= "Ip4Config"
-    elif version == 6:
-        dbus_iface = ".IP6Config"
-        prop= "Ip6Config"
-    else:
-        return []
-
-    config = nm_device_property(name, prop)
-    if config == "/":
-        return []
-
-    try:
-        addresses = _get_property(config, "Addresses", dbus_iface)
-    # object is valid only if device is in ACTIVATED state (racy)
-    except UnknownMethodGetError:
-        return []
-
-    addr_list = []
-    for addr, prefix, gateway in addresses:
-        # NOTE: There is IPy for python2, ipaddress for python3 but
-        # byte order of dbus value would need to be switched
-        if version == 4:
-            addr_str = nm_dbus_int_to_ipv4(addr)
-            gateway_str = nm_dbus_int_to_ipv4(gateway)
-        elif version == 6:
-            addr_str = nm_dbus_ay_to_ipv6(addr)
-            gateway_str = nm_dbus_ay_to_ipv6(gateway)
-        addr_list.append([addr_str, prefix, gateway_str])
-
-    try:
-        nameservers = _get_property(config, "Nameservers", dbus_iface)
-    # object is valid only if device is in ACTIVATED state (racy)
-    except UnknownMethodGetError:
-        return []
-
-    ns_list = []
-    for ns in nameservers:
-        # TODO - look for a library function
-        if version == 4:
-            ns_str = nm_dbus_int_to_ipv4(ns)
-        elif version == 6:
-            ns_str = nm_dbus_ay_to_ipv6(ns)
-        ns_list.append(ns_str)
-
-    return [addr_list, ns_list]
 
 def nm_device_slaves(name):
     """Return slaves of device.
@@ -572,7 +477,7 @@ def nm_ntp_servers_from_dhcp():
     """
     ntp_servers = []
     # get paths for all actively connected interfaces
-    active_devices = nm_activated_devices()
+    active_devices = nm_activated_ifaces()
     for device in active_devices:
         # harvest NTP server addresses from DHCPv4
         dhcp4_path = nm_device_property(device, "Dhcp4Config")
@@ -1016,26 +921,6 @@ def nm_ipv4_to_dbus_int(address):
     """
     return struct.unpack("=L", socket.inet_aton(address))[0]
 
-def nm_dbus_ay_to_ipv6(bytelist):
-    """Convert ipv6 address from list of bytes (dbus 'ay') to string.
-
-    :param address: IPv6 address as list of bytes returned by dbus ('ay')
-    :type address: list of bytes - dbus 'ay'
-    :return: IPv6 address
-    :rtype: str
-    """
-    return socket.inet_ntop(socket.AF_INET6, "".join(chr(byte) for byte in bytelist))
-
-def nm_dbus_int_to_ipv4(address):
-    """Convert ipv4 address from dus int 'u' (switched endianess) to string.
-
-    :param address: IPv4 address as integer returned by dbus ('u')
-    :type address: integer - dbus 'u'
-    :return: IPv6 address
-    :rtype: str
-    """
-    return socket.inet_ntop(socket.AF_INET, struct.pack('=L', address))
-
 def test():
     print("NM state: %s:" % nm_state())
     print("NM is connected: %s" % nm_is_connected())
@@ -1080,10 +965,6 @@ def test():
             print("     %s" % e)
 
         try:
-            print("     IP4 config: %s" % nm_device_ip_config(devname))
-            print("     IP6 config: %s" % nm_device_ip_config(devname, version=6))
-            print("     IP4 addrs: %s" % nm_device_ip_addresses(devname))
-            print("     IP6 addrs: %s" % nm_device_ip_addresses(devname, version=6))
             print("     Udi: %s" % nm_device_property(devname, "Udi"))
         except UnknownDeviceError as e:
             print("     %s" % e)
