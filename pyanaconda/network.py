@@ -1328,60 +1328,72 @@ def status_message():
     elif state == NM.State.DISCONNECTING:
         msg = _("Disconnecting...")
     else:
-        active_devs = nm.nm_activated_ifaces()
+        active_devs = nm.nm_activated_devices()
         if active_devs:
 
             slaves = {}
             ssids = {}
 
             # first find slaves and wireless aps
-            for devname in active_devs:
-                slaves[devname] = nm.nm_device_slaves(devname) or []
-                if nm.nm_device_type_is_wifi(devname):
-                    ssids[devname] = nm.nm_device_active_ssid(devname) or ""
+            for device in active_devs:
+                try:
+                    slaves[device] = [d.get_ip_iface() or d.get_iface()
+                                      for d in device.get_slaves()]
+                except AttributeError:
+                    slaves[device] = []
+                if device.get_device_type() == NM.DeviceType.WIFI:
+                    aap = device.get_active_access_point()
+                    if aap:
+                        ssids[device] = aap.get_ssid().get_data()
+                    else:
+                        ssids[device] = ""
 
             all_slaves = set(itertools.chain.from_iterable(slaves.values()))
             nonslaves = [dev for dev in active_devs if dev not in all_slaves]
 
             if len(nonslaves) == 1:
-                devname = nonslaves[0]
-                if nm.nm_device_type_is_ethernet(devname):
+                device = nonslaves[0]
+                devname = device.get_ip_iface() or device.get_iface()
+                devtype = device.get_device_type()
+                if devtype == NM.DeviceType.ETHERNET:
                     msg = _("Wired (%(interface_name)s) connected") \
                           % {"interface_name": devname}
-                elif nm.nm_device_type_is_wifi(devname):
+                elif devtype == NM.DeviceType.WIFI:
                     msg = _("Wireless connected to %(access_point)s") \
-                          % {"access_point" : ssids[devname]}
-                elif nm.nm_device_type_is_bond(devname):
+                          % {"access_point" : ssids[device]}
+                elif devtype == NM.DeviceType.BOND:
                     msg = _("Bond %(interface_name)s (%(list_of_slaves)s) connected") \
                           % {"interface_name": devname, \
-                             "list_of_slaves": ",".join(slaves[devname])}
-                elif nm.nm_device_type_is_team(devname):
+                             "list_of_slaves": ",".join(slaves[device])}
+                elif devtype == NM.DeviceType.TEAM:
                     msg = _("Team%(interface_name)s (%(list_of_slaves)s) connected") \
                           % {"interface_name": devname, \
-                             "list_of_slaves": ",".join(slaves[devname])}
-                elif nm.nm_device_type_is_bridge(devname):
+                             "list_of_slaves": ",".join(slaves[device])}
+                elif devtype == NM.DeviceType.BRIDGE:
                     msg = _("Bridge%(interface_name)s (%(list_of_slaves)s) connected") \
                           % {"interface_name": devname, \
-                             "list_of_slaves": ",".join(slaves[devname])}
-                elif nm.nm_device_type_is_vlan(devname):
-                    parent = nm.nm_device_setting_value(devname, "vlan", "parent")
-                    vlanid = nm.nm_device_setting_value(devname, "vlan", "id")
+                             "list_of_slaves": ",".join(slaves[device])}
+                elif devtype == NM.DeviceType.VLAN:
+                    parent = device.get_parent().get_iface()
+                    vlanid = device.get_parent().get_vlan_id()
                     msg = _("VLAN %(interface_name)s (%(parent_device)s, ID %(vlanid)s) connected") \
                           % {"interface_name": devname, "parent_device": parent, "vlanid": vlanid}
             elif len(nonslaves) > 1:
                 devlist = []
-                for devname in nonslaves:
-                    if nm.nm_device_type_is_ethernet(devname):
+                for device in nonslaves:
+                    devname = device.get_ip_iface() or device.get_iface()
+                    devtype = device.get_device_type()
+                    if devtype == NM.DeviceType.ETHERNET:
                         devlist.append("%s" % devname)
-                    elif nm.nm_device_type_is_wifi(devname):
-                        devlist.append("%s" % ssids[devname])
-                    elif nm.nm_device_type_is_bond(devname):
-                        devlist.append("%s (%s)" % (devname, ",".join(slaves[devname])))
-                    elif nm.nm_device_type_is_team(devname):
-                        devlist.append("%s (%s)" % (devname, ",".join(slaves[devname])))
-                    elif nm.nm_device_type_is_bridge(devname):
-                        devlist.append("%s (%s)" % (devname, ",".join(slaves[devname])))
-                    elif nm.nm_device_type_is_vlan(devname):
+                    elif devtype == NM.DeviceType.WIFI:
+                        devlist.append("%s" % ssids[device])
+                    elif devtype == NM.DeviceType.BOND:
+                        devlist.append("%s (%s)" % (devname, ",".join(slaves[device])))
+                    elif devtype == NM.DeviceType.TEAM:
+                        devlist.append("%s (%s)" % (devname, ",".join(slaves[device])))
+                    elif devtype == NM.DeviceType.BRIDGE:
+                        devlist.append("%s (%s)" % (devname, ",".join(slaves[device])))
+                    elif devtype == NM.DeviceType.VLAN:
                         devlist.append("%s" % devname)
                 msg = _("Connected: %(list_of_interface_names)s") \
                       % {"list_of_interface_names": ", ".join(devlist)}

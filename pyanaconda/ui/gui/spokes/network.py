@@ -516,7 +516,7 @@ class NetworkControlBox(GObject.GObject):
                 nm.nm_add_connection(values)
                 self.builder.get_object("button_wireless_options").set_sensitive(True)
             else:
-                self.client.add_and_activate_connection(None, dev_cfg.device, ap_obj_path,
+                self.client.add_and_activate_connection_async(None, dev_cfg.device, ap_obj_path,
                                                     None, None)
 
     def on_device_added(self, client, device, *args):
@@ -866,9 +866,9 @@ class NetworkControlBox(GObject.GObject):
             if active_ap:
                 combobox = self.builder.get_object("combobox_wireless_network_name")
                 for i in combobox.get_model():
-                    if i[1] == active_ap.get_ssid():
+                    if i[1] == active_ap.get_ssid().get_data():
                         combobox.set_active_iter(i.iter)
-                        self.selected_ssid = active_ap.get_ssid()
+                        self.selected_ssid = active_ap.get_ssid().get_data()
                         break
             self._updating_device = False
 
@@ -1010,7 +1010,7 @@ class NetworkControlBox(GObject.GObject):
 
     # TODO NM_GI_BUGS use glib methods for mode and security (dbus obj or nm obj?)
     def _add_ap(self, ap, active=False):
-        ssid = ap.get_ssid()
+        ssid = ap.get_ssid().get_data()
         if not ssid:
             return
 
@@ -1042,7 +1042,7 @@ class NetworkControlBox(GObject.GObject):
     def _get_strongest_unique_aps(self, access_points):
         strongest_aps = {}
         for ap in access_points:
-            ssid = ap.get_ssid()
+            ssid = ap.get_ssid().get_data()
             if ssid in strongest_aps:
                 if ap.get_strength() > strongest_aps[ssid].get_strength():
                     strongest_aps[ssid] = ap
