@@ -258,27 +258,31 @@ def dumpMissingDefaultIfcfgs():
     """
     rv = []
 
-    for devname in nm.nm_devices():
+    for device in nm.nm_supported_devices():
         # for each ethernet device
         # FIXME add more types (infiniband, bond...?)
-        if not nm.nm_device_type_is_ethernet(devname):
+        if device.get_device_type() != NM.DeviceType.ETHERNET:
             continue
 
+        cons = device.get_available_connections()
+
         # check that device has connection without ifcfg file
-        try:
-            nm.nm_device_setting_value(devname, "connection", "uuid")
-        except nm.SettingsNotFoundError:
+        if not cons:
             continue
+        devname = device.get_iface()
         if find_ifcfg_file_of_device(devname):
             continue
 
-        try:
-            nm.nm_update_settings_of_device(devname, [['connection', 'id', devname, None]])
-            log.debug("network: dumping ifcfg file for default autoconnection on %s", devname)
-            nm.nm_update_settings_of_device(devname, [['connection', 'autoconnect', False, None]])
-            log.debug("network: setting autoconnect of %s to False" , devname)
-        except nm.SettingsNotFoundError:
-            log.debug("network: no ifcfg file for %s", devname)
+        # Assuming only one connection
+        con = cons[0]
+
+        con.get_setting_connection().set_property('id', devname)
+        log.debug("network: setting autoconnect of %s to False" , devname)
+        con.get_setting_connection().set_property('autoconnect', False)
+
+        log.debug("network: dumping ifcfg file for default autoconnection on %s", devname)
+        con.commit_changes(True, None)
+
         rv.append(devname)
 
     return rv

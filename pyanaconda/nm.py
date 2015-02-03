@@ -185,6 +185,10 @@ def nm_devices():
 
     return interfaces
 
+def nm_supported_devices():
+    return [d for d in client.get_devices()
+            if d.get_device_type() in supported_device_types]
+
 def nm_activated_ifaces():
     ifaces = []
     for device in nm_activated_devices():
