@@ -378,21 +378,21 @@ def dracutBootArguments(devname, ifcfg, storage_ipaddr, hostname=None):
     return netargs
 
 def _get_ip_setting_values_from_ksdata(networkdata):
-    values = []
 
-    # ipv4 settings
-    method4 = "auto"
+    # ipv4 adddresses and gateway
+    ipv4 = NM.SettingIP4Config.new()
+    method = "auto"
     if networkdata.bootProto == "static":
-        method4 = "manual"
-    values.append(["ipv4", "method", method4, "s"])
+        method = "manual"
+        prefix = netmask2prefix(networkdata.netmask)
+        addr = NM.IPAddress.new(socket.AF_INET, networkdata.ip, prefix)
+        ipv4.add_address(addr)
+        if networkdata.gateway:
+            ipv4.props.gateway = networkdata.gateway
+    ipv4.set_property(NM.SETTING_IP_CONFIG_METHOD, method)
 
-    if method4 == "manual":
-        addr4 = nm.nm_ipv4_to_dbus_int(networkdata.ip)
-        gateway4 = nm.nm_ipv4_to_dbus_int(networkdata.gateway)
-        prefix4 = netmask2prefix(networkdata.netmask)
-        values.append(["ipv4", "addresses", [[addr4, prefix4, gateway4]], "aau"])
-
-    # ipv6 settings
+    # ipv6 addresses and gateway
+    ipv6 = NM.SettingIP6Config.new()
     if networkdata.noipv6:
         method6 = "ignore"
     else:
@@ -404,41 +404,45 @@ def _get_ip_setting_values_from_ksdata(networkdata):
             method6 = "dhcp"
         else:
             method6 = "manual"
-    values.append(["ipv6", "method", method6, "s"])
-
+    ipv6.set_property(NM.SETTING_IP_CONFIG_METHOD, method6)
     if method6 == "manual":
         addr6, _slash, prefix6 = networkdata.ipv6.partition("/")
         if prefix6:
             prefix6 = int(prefix6)
         else:
             prefix6 = 64
-        addr6 = nm.nm_ipv6_to_dbus_ay(addr6)
+        addr = NM.IPAddress.new(socket.AF_INET6, addr6, prefix6)
+        ipv6.add_address(addr)
         if networkdata.ipv6gateway:
-            gateway6 = nm.nm_ipv6_to_dbus_ay(networkdata.ipv6gateway)
-        else:
-            gateway6 = [0] * 16
-        values.append(["ipv6", "addresses", [(addr6, prefix6, gateway6)], "a(ayuay)"])
+            ipv6.props.gateway = networkdata.ipv6gateway
 
     # nameservers
-    nss4 = []
-    nss6 = []
     if networkdata.nameserver:
-        for ns in networkdata.nameserver.split(","):
-            if ":" in ns:
-                nss6.append(nm.nm_ipv6_to_dbus_ay(ns))
-            else:
-                nss4.append(nm.nm_ipv4_to_dbus_int(ns))
-    values.append(["ipv4", "dns", nss4, "au"])
-    values.append(["ipv6", "dns", nss6, "aay"])
+        nss = [ns for ns in networkdata.nameserver.split(",")]
+        ipv4.props.dns = [ns for ns in nss if ":" not in ns]
+        ipv6.props.dns = [ns for ns in nss if ":" in ns]
 
-    return values
+    return (ipv4, ipv6)
 
 def update_settings_with_ksdata(devname, networkdata):
-    new_values = _get_ip_setting_values_from_ksdata(networkdata)
-    new_values.append(['connection', 'autoconnect', networkdata.onboot, None])
-    uuid = nm.nm_device_setting_value(devname, "connection", "uuid")
-    nm.nm_update_settings_of_device(devname, new_values)
-    return uuid
+    device = nm.client.get_device_by_iface(devname)
+    if not device:
+        log.debug("can't find device for %s", devname)
+        return (None, None)
+    cons = device.get_available_connections()
+    if not cons:
+        log.debug("can't find connection for %s", devname)
+        return (None, None)
+    con = cons[0]
+    ipv4, ipv6 = _get_ip_setting_values_from_ksdata(networkdata)
+    con.remove_setting(con.get_setting_ip4_config())
+    con.remove_setting(con.get_setting_ip6_config())
+    con.add_setting(ipv4)
+    con.add_setting(ipv6)
+    con.get_setting_connection().set_property('autoconnect', networkdata.onboot)
+    con.commit_changes(True, None)
+    uuid = con.get_uuid()
+    return (con, device)
 
 def bond_options_ksdata_to_dbus(opts_str):
     retval = {}
@@ -447,109 +451,116 @@ def bond_options_ksdata_to_dbus(opts_str):
         retval[key] = value
     return retval
 
-def add_connection_for_ksdata(networkdata, devname):
+def nm_connection_from_ksdata(networkdata, devname):
+    con = NM.SimpleConnection.new()
 
-    added_connections = []
-    con_uuid = str(uuid4())
-    values = _get_ip_setting_values_from_ksdata(networkdata)
+    s_con = NM.SettingConnection.new()
+    s_con.set_property('uuid', str(uuid4()))
     # HACK preventing NM to autoactivate the connection
-    #values.append(['connection', 'autoconnect', networkdata.onboot, 'b'])
-    values.append(['connection', 'autoconnect', False, 'b'])
-    values.append(['connection', 'uuid', con_uuid, 's'])
+    # s_con.set_property('autoconnect', networkdata.onboot)
+    s_con.set_property('autoconnect', False)
+    s_con.set_property('id', devname)
+    s_con.set_property('interface-name', devname)
+
+    s_ipv4, s_ipv6 = _get_ip_setting_values_from_ksdata(networkdata)
+    con.add_setting(s_ipv4)
+    con.add_setting(s_ipv6)
 
     # type "bond"
     if networkdata.bondslaves:
         # bond connection is autoactivated
-        values.append(['connection', 'type', 'bond', 's'])
-        values.append(['connection', 'id', devname, 's'])
-        values.append(['bond', 'interface-name', devname, 's'])
+        s_con.set_property('type', 'bond')
+        con.add_setting(s_con)
+        s_bond = NM.SettingBond.new()
         options = bond_options_ksdata_to_dbus(networkdata.bondopts)
-        values.append(['bond', 'options', options, 'a{ss}'])
+        s_bond.set_property('options', options)
+        con.add_setting(s_bond)
         for slave in networkdata.bondslaves.split(","):
-            suuid = _add_slave_connection('bond', slave, devname, networkdata.activate)
-            added_connections.append((suuid, slave))
-        dev_spec = None
+            slave_con = _add_slave_connection('bond', slave, devname, networkdata.activate)
+            persistent = True
+            nm.client.add_connection_async(slave_con, persistent, None, None, None)
     # type "team"
     elif networkdata.teamslaves:
-        values.append(['connection', 'type', 'team', 's'])
-        values.append(['connection', 'id', devname, 's'])
-        values.append(['team', 'interface-name', devname, 's'])
-        values.append(['team', 'config', networkdata.teamconfig, 's'])
+        s_con.set_property('type', 'team')
+        con.add_setting(s_con)
+        s_team = NM.SettingTeam.new()
+        s_team.set_property('config', networkdata.teamconfig)
+        con.add_setting(s_team)
         for (slave, cfg) in networkdata.teamslaves:
-            values = [['team-port', 'config', cfg, 's']]
-            suuid = _add_slave_connection('team', slave, devname, networkdata.activate, values)
-            added_connections.append((suuid, slave))
-        dev_spec = None
+            s_port = NM.SettingTeamPort()
+            s_port.set_property('config', cfg)
+            slave_con = _add_slave_connection('team', slave, devname, networkdata.activate)
+            slave_con.add_setting(s_port)
+            persistent = True
+            nm.client.add_connection_async(slave_con, persistent, None, None, None)
     # type "vlan"
     elif networkdata.vlanid:
-        values.append(['vlan', 'parent', networkdata.parent, 's'])
-        values.append(['connection', 'type', 'vlan', 's'])
-        values.append(['connection', 'id', devname, 's'])
-        values.append(['vlan', 'interface-name', devname, 's'])
-        values.append(['vlan', 'id', int(networkdata.vlanid), 'u'])
-        dev_spec = None
+        s_con.set_property('type', 'vlan')
+        con.add_setting(s_con)
+        s_vlan = NM.SettingVlan.new()
+        s_vlan.set_property('parent', networkdata.parent)
+        s_vlan.set_property('id', int(networkdata.vlanid))
+        con.add_setting(s_vlan)
     # type "bridge"
     elif networkdata.bridgeslaves:
         # bridge connection is autoactivated
-        values.append(['connection', 'type', 'bridge', 's'])
-        values.append(['connection', 'id', devname, 's'])
-        values.append(['bridge', 'interface-name', devname, 's'])
+        s_con.set_property('type', 'bridge')
+        con.add_setting(s_con)
+
+        s_bridge = NM.SettingsBridge.new()
         for opt in networkdata.bridgeopts.split(","):
             key, _sep, value = opt.partition("=")
             if key == "stp":
                 if value == "yes":
-                    values.append(['bridge', key, True, 'b'])
+                    s_bridge.set_property(key, True)
                 elif value == "no":
-                    values.append(['bridge', key, False, 'b'])
+                    s_bridge.set_property(key, False)
                 continue
             try:
                 value = int(value)
             except ValueError:
                 log.error("Invalid bridge option %s", opt)
                 continue
-            values.append(['bridge', key, int(value), 'u'])
+            s_bridge.set_property(key, int(value))
+        con.add_setting(s_bridge)
+
         for slave in networkdata.bridgeslaves.split(","):
-            suuid = _add_slave_connection('bridge', slave, devname, networkdata.activate)
-            added_connections.append((suuid, slave))
-        dev_spec = None
+            slave_con = _add_slave_connection('bridge', slave, devname, networkdata.activate)
+            persistent = True
+            nm.client.add_connection_async(slave_con, persistent, None, None, None)
     # type "802-3-ethernet"
     else:
-        mac = nm.nm_device_perm_hwaddress(devname)
+        s_con.set_property('type', '802-3-ethernet')
+        con.add_setting(s_con)
+
+        device = nm.client.get_device_by_iface(devname)
+        mac = device.get_hw_address()
         if flags.cmdline.get("ifname", "").upper() == "{0}:{1}".format(devname, mac).upper():
-            mac = [int(b, 16) for b in mac.split(":")]
-            values.append(['802-3-ethernet', 'mac-address', mac, 'ay'])
-        else:
-            values.append(['802-3-ethernet', 'name', devname, 's'])
-        values.append(['connection', 'type', '802-3-ethernet', 's'])
-        values.append(['connection', 'id', devname, 's'])
-        values.append(['connection', 'interface-name', devname, 's'])
+            s_wired = NM.SettingWired.new()
+            s_wired.set_property('mac-address', mac)
+            con.add_setting(s_wired)
 
-        dev_spec = devname
+    return con
 
-    try:
-        nm.nm_add_connection(values)
-    except nm.BondOptionsError as e:
-        log.error(e)
-        return []
-    added_connections.insert(0, (con_uuid, dev_spec))
-    return added_connections
-
-def _add_slave_connection(slave_type, slave, master, activate, values=None):
-    values = values or []
+def _add_slave_connection(slave_type, slave, master, activate):
     #slave_name = "%s slave %d" % (devname, slave_idx)
     slave_name = slave
 
-    values = []
-    suuid =  str(uuid4())
-    # assume ethernet, TODO: infiniband, wifi, vlan
-    values.append(['connection', 'uuid', suuid, 's'])
-    values.append(['connection', 'id', slave_name, 's'])
-    values.append(['connection', 'slave-type', slave_type, 's'])
-    values.append(['connection', 'master', master, 's'])
-    values.append(['connection', 'type', '802-3-ethernet', 's'])
-    mac = nm.nm_device_perm_hwaddress(slave)
-    mac = [int(b, 16) for b in mac.split(":")]
-    values.append(['802-3-ethernet', 'mac-address', mac, 'ay'])
+    con = NM.SimpleConnection.new()
+
+    s_con = NM.SettingConnection.new()
+    s_con.set_property('uuid', str(uuid4()))
+    s_con.set_property('id', slave_name)
+    s_con.set_property('slave-type', slave_type)
+    s_con.set_property('master', master)
+    s_con.set_property('type', '802-3-ethernet')
+    con.add_setting(s_con)
+
+    device = nm.client.get_device_by_iface(slave)
+    mac = device.get_hw_address()
+    s_wired = NM.SettingWired.new()
+    s_wired.set_property('mac-address', mac)
+    con.add_setting(s_wired)
 
     # disconnect slaves
     if activate:
@@ -562,9 +573,7 @@ def _add_slave_connection(slave_type, slave, master, activate, values=None):
     if ifcfg_path and os.access(ifcfg_path, os.R_OK):
         os.unlink(ifcfg_path)
 
-    nm.nm_add_connection(values)
-
-    return suuid
+    return con
 
 def ksdata_from_ifcfg(devname, uuid=None):
 
@@ -1136,11 +1145,20 @@ def setOnboot(ksdata):
             log.warning("network: set ONBOOT: --device %s does not exist", network_data.device)
             continue
 
+        device = nm.client.get_device_by_iface(devname)
+        if not device:
+            log.debug("setOnboot: can't find device for %s", devname)
+            continue
+        cons = device.get_available_connections()
+        if not cons:
+            log.debug("setOnboot: can't find connection for %s", devname)
+            continue
+
+        con = cons[0]
+        con.get_setting_connection().set_property('autoconnect', network_data.onboot)
+        con.commit_changes(True, None)
+
         updated_devices.append(devname)
-        try:
-            nm.nm_update_settings_of_device(devname, [['connection', 'autoconnect', network_data.onboot, None]])
-        except (nm.SettingsNotFoundError, nm.UnknownDeviceError) as e:
-            log.debug("setOnboot: %s", e)
     return updated_devices
 
 def apply_kickstart(ksdata):
@@ -1185,21 +1203,26 @@ def apply_kickstart(ksdata):
         if ifcfg_path:
             # if the device was already configured in initramfs update the settings
             log.debug("network: pre kickstart - updating settings of device %s", dev_name)
-            con_uuid = update_settings_with_ksdata(dev_name, network_data)
-            added_connections = [(con_uuid, dev_name)]
+            con, device = update_settings_with_ksdata(dev_name, network_data)
+            if device and network_data.activate:
+                nm.client.activate_connection_async(con, device)
         else:
             log.debug("network: pre kickstart - adding connection for %s", dev_name)
             # Virtual devices (eg vlan, bond) return dev_name == None
-            added_connections = add_connection_for_ksdata(network_data, dev_name)
 
-        if network_data.activate:
-            for con_uuid, dev_name in added_connections:
-                try:
-                    nm.nm_activate_device_connection(dev_name, con_uuid)
-                except (nm.UnknownConnectionError, nm.UnknownDeviceError) as e:
-                    log.warning("network: pre kickstart: can't activate connection %s on %s: %s",
-                                con_uuid, dev_name, e)
+            con = nm_connection_from_ksdata(network_data, dev_name)
+            persistent = True
+            nm.client.add_connection_async(con, persistent, None, added_con_cb, network_data.activate)
+
     return applied_devices
+
+def added_con_cb(client, result, activate):
+    con = client.add_connection_finish(result)
+    if not con:
+        log.debug("adding connection failed")
+        return
+    if activate:
+        client.activate_connection_async(con)
 
 def networkInitialize(ksdata):
     if not can_touch_runtime_system("networkInitialize", touch_live=True):

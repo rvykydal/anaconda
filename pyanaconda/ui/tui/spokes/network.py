@@ -203,14 +203,9 @@ class NetworkSpoke(EditTUISpoke):
             else:
                 ndata.noipv6 = False
 
-            network.update_settings_with_ksdata(devname, ndata)
-
-            if ndata._apply:
-                uuid = nm.nm_device_setting_value(devname, "connection", "uuid")
-                try:
-                    nm.nm_activate_device_connection(devname, uuid)
-                except (nm.UnmanagedDeviceError, nm.UnknownConnectionError):
-                    self.errors.append(_("Can't apply configuration, device activation failed."))
+            con, device = update_settings_with_ksdata(dev_name, network_data)
+            if device and ndata._apply:
+                nm.client.activate_connection_async(con, device)
 
             self.apply()
             return INPUT_PROCESSED
