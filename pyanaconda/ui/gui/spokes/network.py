@@ -675,17 +675,22 @@ class NetworkControlBox(GObject.GObject):
     def add_device_to_list(self, device):
         if device.get_device_type() not in self.supported_device_types:
             return
+        devname = device.get_iface()
+        log.debug("DBG devname %s %s" % (devname, self.client))
+        if not devname:
+            return
+        log.debug("DBG passed")
         # ignore fcoe vlan devices
         # (can be chopped off to IFNAMSIZ kernel limit)
-        if device.get_iface().endswith(('-fcoe', '-fco', '-fc', '-f', '-')):
+        if devname.endswith(('-fcoe', '-fco', '-fc', '-f', '-')):
             return
 
         try:
-            read_only = nm.nm_device_setting_value(device.get_iface(), "connection", "read-only")
+            read_only = nm.nm_device_setting_value(devname, "connection", "read-only")
             if read_only:
-                log.debug("network: not adding read-only connection for device %s", device.get_iface())
+                log.debug("network: not adding read-only connection for device %s", devname)
                 return
-            con_uuid = nm.nm_device_setting_value(device.get_iface(), "connection", "uuid")
+            con_uuid = nm.nm_device_setting_value(devname, "connection", "uuid")
             dev_cfg = self.dev_cfg(uuid=con_uuid)
         except nm.UnknownDeviceError as e:
             log.error(e)
