@@ -168,22 +168,7 @@ def nm_devices():
     :return: names of network devices supported in installer
     :rtype: list of strings
     """
-
-    interfaces = []
-
-    proxy = _get_proxy()
-    if not proxy:
-        return []
-
-    devices = proxy.GetDevices()
-    for device in devices:
-        device_type = _get_property(device, "DeviceType", ".Device")
-        if device_type not in supported_device_types:
-            continue
-        iface = _get_property(device, "Interface", ".Device")
-        interfaces.append(iface)
-
-    return interfaces
+    return [d.get_iface() for d in nm_supported_devices()]
 
 def nm_supported_devices():
     return [d for d in client.get_devices()
