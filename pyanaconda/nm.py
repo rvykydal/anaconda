@@ -432,7 +432,11 @@ def nm_hwaddr_to_device_name(hwaddr):
         :rtype: str
     """
     for device in nm_devices():
-        if nm_device_perm_hwaddress(device).upper() == hwaddr.upper():
+        try:
+            ha = nm_device_perm_hwaddress(device)
+        except PropertyNotFoundError:
+            ha = nm_device_hwaddress(device)
+        if ha.upper() == hwaddr.upper():
             return device
     return None
 
