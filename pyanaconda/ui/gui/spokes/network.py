@@ -653,7 +653,7 @@ class NetworkControlBox(GObject.GObject):
         if device.get_device_type() not in self.supported_device_types:
             return
         devname = device.get_iface()
-        log.debug("DBG devname %s %s" % (devname, self.client))
+        log.debug("DBG devname %s %s %s" % (devname, self.client, device.get_state()))
         if not devname:
             return
         log.debug("DBG passed")
