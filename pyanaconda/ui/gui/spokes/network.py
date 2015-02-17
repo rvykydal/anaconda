@@ -534,8 +534,8 @@ class NetworkControlBox(GObject.GObject):
 
             if devname in nm.nm_activated_ifaces():
                 # Reactivate the connection after configuring it (if it changed)
-                settings = nm.nm_get_settings(uuid, "connection", "uuid")
-                settings_changed = lambda: settings != nm.nm_get_settings(uuid, "connection", "uuid")
+                settings = self.client.get_connection_by_uuid(uuid).to_dbus()
+                settings_changed = lambda: settings != self.client.get_connection_by_uuid(uuid).to_dbus()
                 activate = (uuid, devname, settings_changed)
 
         log.info("network: configuring connection %s device %s ssid %s",
