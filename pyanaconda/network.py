@@ -46,7 +46,7 @@ from pyanaconda.flags import flags, can_touch_runtime_system
 from pyanaconda.i18n import _
 from pyanaconda.regexes import HOSTNAME_PATTERN_WITHOUT_ANCHORS
 
-from gi.repository import NetworkManager
+from gi.repository import NM
 
 import logging
 log = logging.getLogger("anaconda")
@@ -1325,9 +1325,9 @@ def status_message():
     msg = _("Unknown")
 
     state = nm.nm_state()
-    if state == NetworkManager.State.CONNECTING:
+    if state == NM.State.CONNECTING:
         msg = _("Connecting...")
-    elif state == NetworkManager.State.DISCONNECTING:
+    elif state == NM.State.DISCONNECTING:
         msg = _("Disconnecting...")
     else:
         active_devs = nm.nm_activated_devices()
