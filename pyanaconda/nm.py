@@ -758,7 +758,7 @@ def test():
     print("NM is connected: %s" % nm_is_connected())
 
     print("Devices: %s" % nm_devices())
-    print("Activated devices: %s" % nm_activated_devices())
+    print("Activated devices: %s" % nm_activated_ifaces())
 
     wireless_device = ""
 
