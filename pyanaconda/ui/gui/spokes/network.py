@@ -484,7 +484,13 @@ class NetworkControlBox(GObject.GObject):
                 self.client.add_and_activate_connection_async(None, device, ap.get_path(), None, None)
 
     def on_device_added(self, client, device, *args):
-        gtk_call_once(self.add_device_to_list, device)
+        # We need to wait for valid state before adding the device to our list
+        device.connect("state-changed", self.on_added_device_state_changed)
+
+    def on_added_device_state_changed(self, device, new_state, *args):
+        if new_state != NM.DeviceState.UNKNOWN:
+            device.disconnect_by_func(self.on_added_device_state_changed)
+            gtk_call_once(self.add_device_to_list, device)
 
     def on_device_removed(self, client, device, *args):
         self.remove_device(device)
