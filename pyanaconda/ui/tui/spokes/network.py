@@ -195,7 +195,7 @@ class NetworkSpoke(EditTUISpoke):
         elif 2 <= num <= len(self.supported_devices) + 1:
             # configure device
             devname = self.supported_devices[num-2]
-            ndata = network.ksdata_from_ifcfg(devname)
+            ndata = network.ksdata_from_remote_connection(devname)
             newspoke = ConfigureNetworkSpoke(self.app, self.data, self.storage,
                                     self.payload, self.instclass, ndata)
             self.app.switch_screen_modal(newspoke)
@@ -238,7 +238,7 @@ class NetworkSpoke(EditTUISpoke):
 
         self.data.network.network = []
         for name in nm.nm_devices():
-            nd = network.ksdata_from_ifcfg(name)
+            nd = network.ksdata_from_remote_connection(name)
             if not nd:
                 continue
             if name in nm.nm_activated_devices():

@@ -1585,7 +1585,7 @@ def _update_network_data(data, ncb):
     data.network.network = []
     for dev_cfg in ncb.dev_cfgs:
         devname = dev_cfg.get_iface()
-        nd = network.ksdata_from_ifcfg(devname, dev_cfg.get_uuid())
+        nd = network.ksdata_from_remote_connection(devname)
         if not nd:
             continue
         if devname in nm.nm_activated_devices():

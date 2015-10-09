@@ -220,6 +220,27 @@ def nm_activated_devices():
 
     return interfaces
 
+def nm_device_available_connections_uuids(name):
+    """Return uuids of remote connections available for device.
+
+    :return: uuids of available connections
+    :rtype: list of strings
+    """
+
+    uuids = []
+
+    available_connections = nm_device_property(name, "AvailableConnections")
+    for con in available_connections:
+        proxy = _get_proxy(object_path=con, interface_name="org.freedesktop.NetworkManager.Settings.Connection")
+        settings = proxy.GetSettings()
+        try:
+            uuid = settings["connection"]["uuid"]
+        except KeyError:
+            continue
+        uuids.append(uuid)
+
+    return uuids
+
 def _get_object_iface_names(object_path):
     connection = Gio.bus_get_sync(Gio.BusType.SYSTEM, None)
     res_xml = connection.call_sync("org.freedesktop.NetworkManager",

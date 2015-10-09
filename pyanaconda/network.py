@@ -608,8 +608,7 @@ def _add_slave_connection(slave_type, slave, master, activate, values=None):
 
     return suuid
 
-def ksdata_from_ifcfg(devname, uuid=None):
-
+def ksdata_from_remote_connection(devname, uuid=None):
     if devname not in nm.nm_devices():
         return None
 
@@ -620,22 +619,18 @@ def ksdata_from_ifcfg(devname, uuid=None):
         return None
 
     if not uuid:
-        # Find ifcfg file for the device.
         # If the device is active, use uuid of its active connection.
         uuid = nm.nm_device_active_con_uuid(devname)
 
-    if uuid:
-        ifcfg_path = find_ifcfg_file([("UUID", uuid)])
-    else:
-        # look it up by other values depending on its type
-        ifcfg_path = find_ifcfg_file_of_device(devname)
+    if not uuid:
+        # libnm has Device.get_available_connections()
+        uuids = nm.nm_device_available_connections_uuids(devname)
+        if uuids:
+            uuid = uuids[0]
+        else:
+            return None
 
-    if not ifcfg_path:
-        return None
-
-    ifcfg = IfcfgFile(ifcfg_path)
-    ifcfg.read()
-    nd = ifcfg_to_ksdata(ifcfg, devname)
+    nd = remote_connection_to_ksdata(uuid, devname)
 
     if not nd:
         return None
@@ -656,138 +651,132 @@ def ksdata_from_ifcfg(devname, uuid=None):
 
     return nd
 
-def ifcfg_to_ksdata(ifcfg, devname):
+def remote_connection_to_ksdata(uuid, devname):
+
+    kwargs = {}
+    settings = nm.nm_get_settings(uuid, "connection", "uuid")[0]
+
+    def get_setting(key1, key2):
+        if key1 not in settings:
+            log.debug("network: can't find settings %s of device %s", key1, devname)
+            return None
+        else:
+            return settings[key1].get(key2)
+
+    # no network command for team/bond/bridge slaves
+    if settings["connection"].get("master"):
+        return None
+
+    if settings["connection"].get("autoconnect") == False:
+        kwargs["onboot"] = False
+
+    con_type = settings["connection"]["type"]
+
+    mtu = get_setting(con_type, "mtu")
+    if mtu:
+        kwargs["mtu"] = mtu
+
+    # ipv4
+    ipv4_method = get_setting("ipv4", "method")
+    if ipv4_method == "disabled":
+        kwargs["noipv4"] = True
+    elif ipv4_method == "auto":
+        kwargs["bootProto"] = "dhcp"
+        dhcp_hostname = get_setting("ipv4", "dhcp-hostname")
+        if dhcp_hostname:
+            kwargs["hostname"] = dhcp_hostname
+#       This is configured using dhclient.conf files
+#       if ifcfg.get('DHCPCLASS'):
+#           kwargs["dhcpclass"] = ifcfg.get('DHCPCLASS')
+    elif ipv4_method == "manual":
+        kwargs["bootProto"] = "static"
+        # we support only one address in kickstart
+        address = settings["ipv4"]["address-data"][0]
+        kwargs["ip"] = address["address"]
+        kwargs["netmask"] = prefix2netmask(int(address["prefix"]))
+        gateway = settings["ipv4"]["gateway"]
+        if gateway:
+            kwargs["gateway"] = gateway
+
+    # ipv6
+    ipv6_method = get_setting("ipv6", "method")
+    if ipv6_method == "ignore":
+        kwargs["noipv6"] = True
+    elif ipv6_method == "dhcp":
+        kwargs["ipv6"] = "dhcp"
+    elif ipv6_method == "manual":
+        address6 = settings["ipv6"]["address-data"][0]
+        kwargs["ipv6"] = "%s/%s" % (address6["address"], address6["prefix"])
+        kwargs["ipv6gateway"] = settings["ipv6"]["gateway"]
+    else:
+        kwargs["ipv6"] = "auto"
+
+    # nameservers
+    nameservers = []
+    if ipv4_method:
+        nameservers.extend(nm.nm_dbus_int_to_ipv4(ns)
+                           for ns in get_setting("ipv4", "dns"))
+    if ipv6_method:
+        nameservers.extend(nm.nm_dbus_ay_to_ipv6(ns)
+                           for ns in get_setting("ipv6", "dns"))
+    if nameservers:
+        kwargs["nameserver"] = ",".join(nameservers)
+
+#    Not supported by NM https://access.redhat.com/solutions/878503
+#    if ifcfg.get("ETHTOOL_OPTS"):
+#        kwargs["ethtool"] = ifcfg.get("ETHTOOL_OPTS")
+
+    uuid = settings["connection"]["uuid"]
+
+    # bonding
+    if con_type == "bond":
+        slaves = get_slaves([devname, uuid])
+        if slaves:
+            kwargs["bondslaves"] = ",".join(slaves)
+        opts = settings["bond"].get("options")
+        if opts:
+            sep = ","
+            if sep in opts:
+                sep = ";"
+            kwargs["bondopts"] = sep.join(
+                    "%s=%s" % (key, val) for key, val in opts.items())
+
+    # vlan
+    if con_type == "vlan":
+        kwargs["device"] = settings["vlan"]["parent"]
+        kwargs["vlanid"] = settings["vlan"]["id"]
+
+    # bridge
+    if con_type == "bridge":
+        slaves = get_slaves([devname, uuid])
+        if slaves:
+            kwargs["bridgeslaves"] = ",".join(slaves)
+        bridgeopts = []
+        validopts = ["ageing-time"]
+        stp = settings["bridge"].get("stp")
+        # default for stp is True
+        if stp is True or stp is None:
+            bridgeopts.append("stp=yes")
+            validopts.extend(["priority", "forward-delay", "hello-time", "max-age"])
+        else:
+            bridgeopts.append("stp=no")
+        for option in validopts:
+            value = settings["bridge"].get(option)
+            bridgeopts.append("%s=%d" % (option, value))
+        kwargs["bridgeopts"] = ",".join(bridgeopts)
 
     from pyanaconda.kickstart import AnacondaKSHandler
     handler = AnacondaKSHandler()
-    kwargs = {}
-
-    # no network command for bond slaves
-    if ifcfg.get("MASTER"):
-        return None
-    # no network command for team slaves
-    if ifcfg.get("TEAM_MASTER"):
-        return None
-    # no network command for bridge slaves
-    if ifcfg.get("BRIDGE"):
-        return None
-
-    # ipv4 and ipv6
-    if ifcfg.get("ONBOOT") and ifcfg.get("ONBOOT") == "no":
-        kwargs["onboot"] = False
-    if ifcfg.get('MTU') and ifcfg.get('MTU') != "0":
-        kwargs["mtu"] = ifcfg.get('MTU')
-    # ipv4
-    if not ifcfg.get('BOOTPROTO'):
-        kwargs["noipv4"] = True
-    else:
-        if iutil.lowerASCII(ifcfg.get('BOOTPROTO')) == 'dhcp':
-            kwargs["bootProto"] = "dhcp"
-            if ifcfg.get('DHCPCLASS'):
-                kwargs["dhcpclass"] = ifcfg.get('DHCPCLASS')
-        elif ifcfg.get('IPADDR'):
-            kwargs["bootProto"] = "static"
-            kwargs["ip"] = ifcfg.get('IPADDR')
-            netmask = ifcfg.get('NETMASK')
-            prefix = ifcfg.get('PREFIX')
-            if not netmask and prefix:
-                netmask = prefix2netmask(int(prefix))
-            if netmask:
-                kwargs["netmask"] = netmask
-            # note that --gateway is common for ipv4 and ipv6
-            if ifcfg.get('GATEWAY'):
-                kwargs["gateway"] = ifcfg.get('GATEWAY')
-        elif ifcfg.get('IPADDR0'):
-            kwargs["bootProto"] = "static"
-            kwargs["ip"] = ifcfg.get('IPADDR0')
-            prefix = ifcfg.get('PREFIX0')
-            if prefix:
-                netmask = prefix2netmask(int(prefix))
-                kwargs["netmask"] = netmask
-            # note that --gateway is common for ipv4 and ipv6
-            if ifcfg.get('GATEWAY0'):
-                kwargs["gateway"] = ifcfg.get('GATEWAY0')
-
-
-    # ipv6
-    if (not ifcfg.get('IPV6INIT') or
-        ifcfg.get('IPV6INIT') == "no"):
-        kwargs["noipv6"] = True
-    else:
-        if ifcfg.get('IPV6_AUTOCONF') in ("yes", ""):
-            kwargs["ipv6"] = "auto"
-        else:
-            if ifcfg.get('IPV6ADDR'):
-                kwargs["ipv6"] = ifcfg.get('IPV6ADDR')
-                if ifcfg.get('IPV6_DEFAULTGW') \
-                   and ifcfg.get('IPV6_DEFAULTGW') != "::":
-                    kwargs["ipv6gateway"] = ifcfg.get('IPV6_DEFAULTGW')
-            if ifcfg.get('DHCPV6C') == "yes":
-                kwargs["ipv6"] = "dhcp"
-
-    # ipv4 and ipv6
-    dnsline = ''
-    for key in ifcfg.info.keys():
-        if iutil.upperASCII(key).startswith('DNS'):
-            if dnsline == '':
-                dnsline = ifcfg.get(key)
-            else:
-                dnsline += "," + ifcfg.get(key)
-    if dnsline:
-        kwargs["nameserver"] = dnsline
-
-    if ifcfg.get("ETHTOOL_OPTS"):
-        kwargs["ethtool"] = ifcfg.get("ETHTOOL_OPTS")
-
-    if ifcfg.get("ESSID"):
-        kwargs["essid"] = ifcfg.get("ESSID")
-
-    # hostname
-    if ifcfg.get("DHCP_HOSTNAME"):
-        kwargs["hostname"] = ifcfg.get("DHCP_HOSTNAME")
-
-    # bonding
-    # FIXME: dracut has only BOND_OPTS
-    if ifcfg.get("BONDING_MASTER") == "yes" or ifcfg.get("TYPE") == "Bond":
-        slaves = get_slaves_from_ifcfgs("MASTER", [devname, ifcfg.get("UUID")])
-        if slaves:
-            kwargs["bondslaves"] = ",".join(slaves)
-        bondopts = ifcfg.get("BONDING_OPTS")
-        if bondopts:
-            sep = ","
-            if sep in bondopts:
-                sep = ";"
-            kwargs["bondopts"] = sep.join(bondopts.split())
-
-    # vlan
-    if ifcfg.get("VLAN") == "yes" or ifcfg.get("TYPE") == "Vlan":
-        kwargs["device"] = ifcfg.get("PHYSDEV")
-        kwargs["vlanid"] = ifcfg.get("VLAN_ID")
-
-    # bridging
-    if ifcfg.get("TYPE") == "Bridge":
-        slaves = get_slaves_from_ifcfgs("BRIDGE", [devname, ifcfg.get("UUID")])
-        if slaves:
-            kwargs["bridgeslaves"] = ",".join(slaves)
-
-        bridgeopts = ifcfg.get("BRIDGING_OPTS").replace('_', '-').split()
-        if ifcfg.get("STP"):
-            bridgeopts.append("%s=%s" % ("stp", ifcfg.get("STP")))
-        if ifcfg.get("DELAY"):
-            bridgeopts.append("%s=%s" % ("forward-delay", ifcfg.get("DELAY")))
-        if bridgeopts:
-            kwargs["bridgeopts"] = ",".join(bridgeopts)
-
     # pylint: disable=no-member
     nd = handler.NetworkData(**kwargs)
 
     # teaming
-    if ifcfg.get("TYPE") == "Team" or ifcfg.get("DEVICETYPE") == "Team":
-        slaves = get_team_slaves([devname, ifcfg.get("UUID")])
+    if con_type == "team":
+        slaves = get_team_slaves([devname, uuid])
         for dev, cfg in slaves:
             nd.teamslaves.append((dev, cfg))
 
-        teamconfig = nm.nm_device_setting_value(devname, "team", "config")
+        teamconfig = settings["team"].get("config")
         if teamconfig:
             nd.teamconfig = teamconfig
 
@@ -861,34 +850,32 @@ def find_ifcfg_file(values, root_path=""):
             return filepath
     return None
 
-def get_slaves_from_ifcfgs(master_option, master_specs):
-    """List of slaves of master specified by master_specs in master_option.
+def get_slaves(master_specs):
+    """List of slaves of master specified by master_specs (name, opts).
 
-       master_option is ifcfg option containing spec of master
        master_specs is a list containing device name of master (dracut)
        and/or master's connection uuid
     """
     slaves = []
 
-    for filepath in _ifcfg_files(netscriptsDir):
-        ifcfg = IfcfgFile(filepath)
-        ifcfg.read()
-        master = ifcfg.get(master_option)
-        if master in master_specs:
-            device = ifcfg.get("DEVICE")
-            if device:
-                slaves.append(device)
+    for master in master_specs:
+        slave_settings = nm.nm_get_settings(master, "connection", "master")
+        for settings in slave_settings:
+            devname = settings["connection"].get("interface-name")
+            #nm-c-e doesn't save device name
+            # TODO: wifi, infiniband
+            if not devname:
+                ty = settings["connection"]["type"]
+                if ty == "802-3-ethernet":
+                    hwaddr = settings["802-3-ethernet"]["mac-address"]
+                    hwaddr = ":".join("%02X" % b for b in hwaddr)
+                    devname = nm.nm_hwaddr_to_device_name(hwaddr)
+            if devname:
+                slaves.append(devname)
             else:
-                hwaddr = ifcfg.get("HWADDR")
-                for devname in nm.nm_devices():
-                    try:
-                        h = nm.nm_device_property(devname, "PermHwAddress")
-                    except nm.PropertyNotFoundError:
-                        log.debug("can't get PermHwAddress of devname %s", devname)
-                        continue
-                    if h.upper() == hwaddr.upper():
-                        slaves.append(devname)
-                        break
+                uuid = settings["connection"].get("uuid")
+                log.debug("network: can't get slave device name of %s", uuid)
+
     return slaves
 
 # why not from ifcfg? because we want config json value without escapes
