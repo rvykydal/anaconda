@@ -181,6 +181,7 @@ class NetworkSpoke(EditTUISpoke):
         elif 2 <= num <= len(self.supported_devices) + 1:
             # configure device
             devname = self.supported_devices[num-2]
+            network.ensureIfcfgFile(devname)
             ndata = network.ksdata_from_remote_connection(devname)
             newspoke = ConfigureNetworkSpoke(self.app, self.data, self.storage,
                                     self.payload, self.instclass, ndata)
