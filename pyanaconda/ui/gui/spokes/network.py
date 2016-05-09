@@ -680,7 +680,10 @@ class NetworkControlBox(GObject.GObject):
                 if not device:
                     log.debug("network: on_device_off_toggled: no device for %s", dev_cfg.get_iface())
                     return
-                device.disconnect(None)
+                try:
+                    device.disconnect(None)
+                except GLib.GError as e:
+                    log.debug("network: on_device_off_toggled %s: %s", dev_cfg.get_iface(), e)
 
         if self.spoke:
             self.spoke.networking_changed = True
