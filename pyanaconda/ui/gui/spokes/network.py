@@ -579,8 +579,12 @@ class NetworkControlBox(GObject.GObject):
 
             if device and device.get_state() == NM.DeviceState.ACTIVATED:
                 # Reactivate the connection after configuring it (if it changed)
-                settings = con.to_dbus(NM.ConnectionSerializationFlags.ALL)
-                settings_changed = lambda: settings != con.to_dbus(NM.ConnectionSerializationFlags.ALL)
+                settings = dict(con.to_dbus(NM.ConnectionSerializationFlags.ALL))
+                settings['connection']['timestamp'] = 0
+                def settings_changed():
+                    new_settings = dict(con.to_dbus(NM.ConnectionSerializationFlags.ALL))
+                    new_settings['connection']['timestamp'] = 0
+                    return new_settings != settings
                 activate = (con, device, settings_changed)
 
         log.info("network: configuring connection %s device %s ssid %s",
