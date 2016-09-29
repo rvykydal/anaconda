@@ -297,7 +297,7 @@ class UserSpoke(FirstbootSpokeMixIn, NormalSpoke, GUISpokeInputCheckHandler):
         # ks) and no user was defined by kickstart, ignore PwPolicyData default
         # which is --nochanges.
         override = not policy_required and not self._user.password_kickstarted
-        if not self.policy.changesok or override:
+        if not self.policy.changesok and not override:
             self.usepassword.set_sensitive(False)
 
         # Password checks, in order of importance:
