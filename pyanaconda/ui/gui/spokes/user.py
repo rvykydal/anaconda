@@ -274,6 +274,7 @@ class UserSpoke(FirstbootSpokeMixIn, NormalSpoke, GUISpokeInputCheckHandler):
 
         # Configure the password policy, if available. Otherwise use defaults.
         self.policy = self.data.anaconda.pwpolicy.get_policy("user")
+        policy_required = self.policy
         if not self.policy:
             self.policy = self.data.anaconda.PwPolicyData()
 
@@ -292,8 +293,11 @@ class UserSpoke(FirstbootSpokeMixIn, NormalSpoke, GUISpokeInputCheckHandler):
             # Policy is that a non-empty password is required
             self.usepassword.set_active(True)
 
-        if not self.policy.emptyok:
-            # User isn't allowed to change whether password is required or not
+        # If no policy was required (configured via ks or interactive defaults
+        # ks) and no user was defined by kickstart, ignore PwPolicyData default
+        # which is --nochanges.
+        override = not policy_required and not self._user.password_kickstarted
+        if not self.policy.changesok or override:
             self.usepassword.set_sensitive(False)
 
         # Password checks, in order of importance:
