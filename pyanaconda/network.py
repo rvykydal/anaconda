@@ -649,6 +649,8 @@ def _add_slave_connection(slave_type, slave_idx, slave, master, activate, values
     values.append(['connection', 'master', master, 's'])
     values.append(['connection', 'type', '802-3-ethernet', 's'])
     values.append(['connection', 'interface-name', slave, 's'])
+    # HACK preventing NM to autoactivate the connection
+    values.append(['connection', 'autoconnect', False, 'b'])
 
     # disconnect slaves
     if activate:
@@ -1240,7 +1242,7 @@ def setOnboot(ksdata):
 
             updated_devices.append(devname)
 
-        if network_data.bondslaves or network_data.teamslaves:
+        if network_data.bondslaves or network_data.teamslaves or network_data.bridgeslaves:
             updated_slaves = update_slaves_onboot_value(master, network_data.onboot)
             updated_devices.extend(updated_slaves)
 
@@ -1541,7 +1543,7 @@ def update_slaves_onboot_value(devname, value):
     for filepath in _ifcfg_files(netscriptsDir):
         ifcfg = IfcfgFile(filepath)
         ifcfg.read()
-        master = ifcfg.get("MASTER") or ifcfg.get("TEAM_MASTER")
+        master = ifcfg.get("MASTER") or ifcfg.get("TEAM_MASTER") or ifcfg.get("BRIDGE")
         if master in (devname, uuid):
             ifcfg.set(('ONBOOT', ifcfg_value))
             ifcfg.write()
