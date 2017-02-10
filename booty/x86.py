@@ -240,7 +240,7 @@ class x86BootloaderInfo(efiBootloaderInfo):
             self.writeSysconfig(instRoot, grubTarget, upgrade)
 
         ret = self.installGrub(instRoot, bootDev, grubTarget, grubPath, cfPath)
-        if iutil.isEfi():
+        if not upgrade and iutil.isEfi():
             self.writeGrubConf(instRoot, bootDev, rootDev, defaultDev,
                                kernelList, chainList, grubTarget, grubPath,
                                cfPath)
