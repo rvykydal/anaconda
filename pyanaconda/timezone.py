@@ -78,7 +78,7 @@ def time_initialize(timezone, storage, bootloader):
 
         timezone.isUtc = not bootloader.has_windows(ntfs_devs)
 
-    cmd = "hwclock"
+    cmd = "/usr/sbin/hwclock"
     args = ["--hctosys"]
     if timezone.isUtc:
         args.append("--utc")
@@ -152,7 +152,7 @@ def save_hw_clock(timezone):
     if arch.isS390():
         return
 
-    cmd = "hwclock"
+    cmd = "/usr/sbin/hwclock"
     args = ["--systohc"]
     if timezone.isUtc:
         args.append("--utc")
