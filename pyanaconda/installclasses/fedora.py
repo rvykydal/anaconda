@@ -39,7 +39,7 @@ class FedoraBaseInstallClass(BaseInstallClass):
         BaseInstallClass.configure(self, anaconda)
 
     def setNetworkOnbootDefault(self, ksdata):
-        if any(nd.onboot for nd in ksdata.network.network if nd.device):
+        if network.has_any_onboot_autoactivated_device():
             return
         # choose first wired device having link
         for dev in nm.nm_devices():

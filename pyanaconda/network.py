@@ -1731,6 +1731,9 @@ def update_slaves_onboot_value(devname, value):
 
     return retval
 
+def has_any_onboot_autoactivated_device():
+    return find_ifcfg_file([("ONBOOT", "yes")]) is not None
+
 def update_onboot_value(devname, value, ksdata=None, root_path=None):
     """Update onboot value in ifcfg files and optionally ksdata
 
