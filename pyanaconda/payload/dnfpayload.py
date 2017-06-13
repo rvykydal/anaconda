@@ -453,17 +453,25 @@ class DNFPayload(payload.PackagePayload):
         self._select_kernel_package()
         self._select_langpacks()
 
-        for pkg_name in self.requiredPackages:
-            try:
-                self._install_package(pkg_name, required=True)
-                log.debug("selected required package: %s", pkg_name)
-            except payload.NoSuchPackage as e:
-                self._miss(e)
+        for req in self.requirements.packages:
+            ignore_msg = ""
+            if req.id in self.instclass.ignoredPackages:
+                ignore_msg = "IGNORED by install class %s" % self.instclass
+            if req.id in self.data.packages.excludedList:
+                ignore_msg = "IGNORED because excluded"
+            if not ignore_msg:
+                try:
+                    self._install_package(req.id, required=req.strong)
+                except payload.NoSuchPackage as e:
+                    self._miss(e)
+            log.debug("selected package: %s, required for %s %s",
+                       req.id, req.reasons, ignore_msg)
 
-        for group in self.requiredGroups:
+        for req in self.requirements.groups:
             try:
-                self._select_group(group, required=True)
-                log.debug("selected required group: %s", group)
+                self._select_group(req.id, required=req.strong)
+                log.debug("selected group: %s, required for %s",
+                           req.id, req.reasons)
             except payload.NoSuchGroup as e:
                 self._miss(e)
 
@@ -966,14 +974,7 @@ class DNFPayload(payload.PackagePayload):
             for locale in locales:
                 if match_fn(lang, locale):
                     gids.add(gid)
-        log.info('languageGroups: %s', gids)
         return list(gids)
-
-    def preInstall(self, packages=None, groups=None):
-        super(DNFPayload, self).preInstall(packages, groups)
-        if packages:
-            self.requiredPackages += packages
-        self.requiredGroups = groups
 
     def reset(self):
         super(DNFPayload, self).reset()

@@ -34,6 +34,7 @@ import threading
 import re
 import functools
 import time
+from collections import OrderedDict, namedtuple
 
 from blivet.size import Size
 from pyanaconda.iutil import requests_session
@@ -137,6 +138,88 @@ class DependencyError(PayloadError):
 class PayloadInstallError(PayloadError):
     pass
 
+PayloadRequirement = namedtuple('PayloadRequirement', ['id', 'reasons', 'strong'])
+
+class PayloadRequirements(object):
+    """A container to hold payload requirements imposed by installation
+
+    Stores names of packages and groups required by installation together with
+    descriptions of reasons why the object is required and if the requirement is
+    strong.
+    """
+
+    def __init__(self):
+        self._reqs = {}
+        for req_type in ["package", "group"]:
+            self._reqs[req_type] = OrderedDict()
+
+    def _add(self, req_type, ids, reason, strong):
+        if not ids:
+            log.debug("no %s requirement added for %s", (req_type, reason))
+        reqs = self._reqs[req_type]
+        for r_id in ids:
+            if r_id in reqs:
+                reqs[r_id].reasons.append[reason]
+                reqs[r_id].strong = reqs[r_id].strong or strong
+            else:
+                reqs[r_id] = PayloadRequirement(r_id, [reason], strong)
+            log.debug("added %s requirement '%s' for %s, strong=%s" %
+                      (req_type, r_id, reason, strong))
+
+    def add_packages(self, package_names, reason, strong=True):
+        """Add packages required for the reason.
+
+        If a package is already required, the new reason will be
+        stored and the strength of the requirement will be updated.
+
+        :param package_names: names of packages to be added
+        :type package_names: list of str
+        :param reason: description of reason for adding the packages
+        :type reason: str
+        :param strong: is the requirement strong
+        :type strong: bool
+        """
+        self._add("package", package_names, reason, strong)
+
+    def add_groups(self, group_ids, reason, strong=True):
+        """Add groups required for the reason.
+
+        If a group is already required, the new reason will be
+        stored and the strength of the requirement will be updated.
+
+        :param group_ids: ids of groups to be added
+        :type group_ids: list of str
+        :param reason: descripiton of reason for adding the groups
+        :type reason: str
+        :param strong: is the requirement strong
+        :type strong: bool
+        """
+        self._add("group", group_ids, reason, strong)
+
+    @property
+    def packages(self):
+        """List of package requirements.
+
+        return: list of package requirements
+        rtype: list of PayloadRequirement
+        """
+        return list(self._reqs["package"].values())
+
+    @property
+    def groups(self):
+        """List of group requirements.
+
+        return: list of group requirements
+        rtype: list of PayloadRequirement
+        """
+        return list(self._reqs["group"].values())
+
+    def __str__(self):
+        r = []
+        for req_type in sorted(self._reqs):
+            for req, reason in self._reqs[req_type].items():
+                r.append("%s %s: %s" % (req_type, req, reason))
+        return ", ".join(r)
 
 class Payload(object):
     """Payload is an abstract class for OS install delivery methods."""
@@ -157,6 +240,9 @@ class Payload(object):
         self.verbose_errors = []
 
         self._session = requests_session()
+
+        # Additional packages required by installer based on used features
+        self.requirements = PayloadRequirements()
 
     def setup(self, storage, instClass):
         """Do any payload-specific setup."""
@@ -610,11 +696,13 @@ class Payload(object):
     ###
     ### METHODS FOR INSTALLING THE PAYLOAD
     ###
-    def preInstall(self, packages=None, groups=None):
+    def preInstall(self):
         """Perform pre-installation tasks."""
         iutil.mkdirChain(iutil.getSysroot() + "/root")
 
         self._writeModuleBlacklist()
+
+        log.info("Installation requirements: %s" % self.requirements)
 
     def install(self):
         """Install the payload."""
@@ -797,9 +885,6 @@ class PackagePayload(Payload):
         self.install_device = None
         self._rpm_macros = []
 
-        self.requiredPackages = []
-        self.requiredGroups = []
-
         # Used to determine which add-ons to display for each environment.
         # The dictionary keys are environment IDs. The dictionary values are two-tuples
         # consisting of lists of add-on group IDs. The first list is the add-ons specific
@@ -807,7 +892,7 @@ class PackagePayload(Payload):
         # environment.
         self._environmentAddons = {}
 
-    def preInstall(self, packages=None, groups=None):
+    def preInstall(self):
         super(PackagePayload, self).preInstall()
 
         # Set rpm-specific options
@@ -838,11 +923,7 @@ class PackagePayload(Payload):
         # Add platform specific group
         groupid = iutil.get_platform_groupid()
         if groupid and groupid in self.groups:
-            if isinstance(groups, list):
-                log.info("Adding platform group %s", groupid)
-                groups.append(groupid)
-            else:
-                log.warning("Could not add %s to groups, not a list.", groupid)
+            self.requirements.add_groups([groupid], reason="platform")
         elif groupid:
             log.warning("Platform group %s not available.", groupid)
 
@@ -1172,11 +1253,7 @@ class PackagePayload(Payload):
             return
         with open("/run/install/dd_packages", "r") as f:
             for line in f:
-                package = line.strip()
-                if package not in self.requiredPackages:
-                    log.info("DD: adding required package: %s", package)
-                    self.requiredPackages.append(package)
-        log.debug("required packages = %s", self.requiredPackages)
+                self.requirements.add_packages([package], reason="driver disk")
 
     @property
     def ISOImage(self):
