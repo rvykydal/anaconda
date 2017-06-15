@@ -1715,6 +1715,10 @@ class SshKey(commands.sshkey.F22_SshKey):
             users.setUserSshKey(usr.username, usr.key)
 
 class Timezone(commands.timezone.F25_Timezone):
+    def __init__(self, *args):
+        commands.timezone.F25_Timezone.__init__(self, *args)
+        self.packages = []
+
     def setup(self, ksdata):
         # do not install and use NTP package
         if self.nontp or NTP_PACKAGE in ksdata.packages.excludedList:
@@ -1734,8 +1738,7 @@ class Timezone(commands.timezone.F25_Timezone):
                 if ret != 0:
                     log.error("Failed to start NTP service")
 
-            if not NTP_PACKAGE in ksdata.packages.packageList:
-                ksdata.packages.packageList.append(NTP_PACKAGE)
+            self.packages.append(NTP_PACKAGE)
 
             if not NTP_SERVICE in ksdata.services.enabled and \
                     not NTP_SERVICE in ksdata.services.disabled:
