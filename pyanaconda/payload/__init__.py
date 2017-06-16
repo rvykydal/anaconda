@@ -425,6 +425,9 @@ class Payload(object):
     def languageGroups(self):
         return []
 
+    def langpacks(self):
+        return []
+
     def selectedGroups(self):
         """Return list of selected group names from kickstart.
 
