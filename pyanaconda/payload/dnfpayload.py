@@ -366,6 +366,8 @@ class DNFPayload(payload.PackagePayload):
         if ksrepo.excludepkgs:
             repo.exclude = ksrepo.excludepkgs
 
+        repo.modules = True
+
         # If this repo is already known, it's one of two things:
         # (1) The user is trying to do "repo --name=updates" in a kickstart file
         #     and we should just know to enable the already existing on-disk
@@ -440,7 +442,7 @@ class DNFPayload(payload.PackagePayload):
             optional = group.include == GROUP_ALL
 
             try:
-                self._select_group(group.name, default=default, optional=optional)
+                self._select_module(group.name)
                 log.info("selected group: %s", group.name)
             except payload.NoSuchGroup as e:
                 self._miss(e)
@@ -588,6 +590,9 @@ class DNFPayload(payload.PackagePayload):
                 repo.pkgdir = pkgdir
 
         return pkgdir
+
+    def _select_module(self, module_id):
+        self._base.repo_module_dict.install([module_id])
 
     def _select_group(self, group_id, default=True, optional=False, required=False):
         grp = self._base.comps.group_by_pattern(group_id)
