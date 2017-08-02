@@ -125,7 +125,10 @@ class SoftwareSelectionSpoke(NormalSpoke):
     @property
     def environment(self):
         """A wrapper for the environment specification in kickstart"""
-        return self.data.packages.environment
+        if self.payload.using_modules:
+            return None
+        else:
+            return self.data.packages.environment
 
     @environment.setter
     def environment(self, value):

@@ -366,8 +366,6 @@ class DNFPayload(payload.PackagePayload):
         if ksrepo.excludepkgs:
             repo.exclude = ksrepo.excludepkgs
 
-        repo.modules = True
-
         # If this repo is already known, it's one of two things:
         # (1) The user is trying to do "repo --name=updates" in a kickstart file
         #     and we should just know to enable the already existing on-disk
@@ -408,44 +406,67 @@ class DNFPayload(payload.PackagePayload):
         super(DNFPayload, self).addRepo(ksrepo)
 
     def _apply_selections(self):
-        if self.data.packages.nocore:
-            log.info("skipping core group due to %%packages --nocore; system may not be complete")
+
+        if not self.using_modules:
+            if self.data.packages.nocore:
+                log.info("skipping core group due to %%packages --nocore; system may not be complete")
+            else:
+                try:
+                    self._select_group('core', required=True)
+                    log.info("selected group: core")
+                except payload.NoSuchGroup as e:
+                    self._miss(e)
+
+        if self.using_modules:
+            profile = None
+            if self.data.packages.default and self.profiles:
+                profile = self.profiles[0]
+            elif self.data.packages.environment:
+                profile = self.data.packages.environment
+
+            if profile:
+                try:
+                    log.info("selected profile: %s", profile)
+                    self._select_profile(profile)
+                except payload.NoSuchGroup as e:
+                    self._miss(e)
+
         else:
-            try:
-                self._select_group('core', required=True)
-                log.info("selected group: core")
-            except payload.NoSuchGroup as e:
-                self._miss(e)
+            env = None
 
-        env = None
+            if self.data.packages.default and self.environments:
+                env = self.environments[0]
+            elif self.data.packages.environment:
+                env = self.data.packages.environment
 
-        if self.data.packages.default and self.environments:
-            env = self.environments[0]
-        elif self.data.packages.environment:
-            env = self.data.packages.environment
+            excludedGroups = [group.name for group in self.data.packages.excludedGroupList]
 
-        excludedGroups = [group.name for group in self.data.packages.excludedGroupList]
+            if env:
+                try:
+                    self._select_environment(env, excludedGroups)
+                    log.info("selected env: %s", env)
+                except payload.NoSuchGroup as e:
+                    self._miss(e)
 
-        if env:
-            try:
-                self._select_environment(env, excludedGroups)
-                log.info("selected env: %s", env)
-            except payload.NoSuchGroup as e:
-                self._miss(e)
+        if self.using_modules:
+            for group in self.data.packages.groupList:
+                self._select_modules([group.name])
+                log.info("selected module: %s", group.name)
+        else:
+            for group in self.data.packages.groupList:
+                if group.name == 'core' or group.name in excludedGroups:
+                    continue
 
-        for group in self.data.packages.groupList:
-            if group.name == 'core' or group.name in excludedGroups:
-                continue
+                default = group.include in (GROUP_ALL,
+                                            GROUP_DEFAULT)
+                optional = group.include == GROUP_ALL
 
-            default = group.include in (GROUP_ALL,
-                                        GROUP_DEFAULT)
-            optional = group.include == GROUP_ALL
-
-            try:
-                self._select_module(group.name)
-                log.info("selected group: %s", group.name)
-            except payload.NoSuchGroup as e:
-                self._miss(e)
+                try:
+                    self._select_group(group.name, default=default,
+                                    optional=optional)
+                    log.info("selected group: %s", group.name)
+                except payload.NoSuchGroup as e:
+                    self._miss(e)
 
         for pkg_name in set(self.data.packages.packageList) - set(self.data.packages.excludedList):
             try:
@@ -591,8 +612,8 @@ class DNFPayload(payload.PackagePayload):
 
         return pkgdir
 
-    def _select_module(self, module_id):
-        self._base.repo_module_dict.install([module_id])
+    def _select_modules(self, module_ids):
+        self._base.repo_module_dict.install(module_ids, autoenable=True)
 
     def _select_group(self, group_id, default=True, optional=False, required=False):
         grp = self._base.comps.group_by_pattern(group_id)
@@ -619,6 +640,24 @@ class DNFPayload(payload.PackagePayload):
         # the environment so we can skip the ones that are excluded.
         for groupid in set(self.environmentGroups(env_id, optional=False)) - set(excluded):
             self._select_group(groupid)
+
+    def _select_profile(self, profile_name):
+        profile = next(p for p in self._base.repo_module_dict.profiles
+                       if p.name == profile_name)
+        # TODO value availability checking (vs exception?)
+        modspecs = []
+        for module_default in profile.values():
+            if not module_default.default:
+                continue
+            default_stream = module_default.default_stream
+            module_profiles = module_default.default_profiles[default_stream]
+            for module_profile in module_profiles:
+                modspec = "%s-%s/%s" % (module_default.module_name,
+                                        default_stream,
+                                        module_profile)
+                modspecs.append(modspec)
+        log.info("using %s defaults, selected modules: %s", profile_name, modspecs)
+        self._select_modules(modspecs)
 
     def _select_kernel_package(self):
         kernels = self.kernelPackages
@@ -668,8 +707,25 @@ class DNFPayload(payload.PackagePayload):
         return None
 
     @property
+    def using_modules(self):
+        if self.baseRepo is None:
+            result = None
+        else:
+            with self._repos_lock:
+                result = self._base.repos[self.baseRepo].modules
+        return result
+
+    @property
     def environments(self):
-        return [env.id for env in self._base.comps.environments]
+        # NO UI for profiles/streams/modules yet
+        if self.using_modules:
+            return []
+        else:
+            return [env.id for env in self._base.comps.environments]
+
+    @property
+    def profiles(self):
+        return [profile.name for profile in self._base.repo_module_dict.profiles]
 
     @property
     def groups(self):
