@@ -646,17 +646,14 @@ class DNFPayload(payload.PackagePayload):
                        if p.name == profile_name)
         # TODO value availability checking (vs exception?)
         modspecs = []
+
+        self._base.repo_module_dict.selected_profile = profile
         for module_default in profile.values():
             if not module_default.default:
                 continue
-            default_stream = module_default.default_stream
-            module_profiles = module_default.default_profiles[default_stream]
-            for module_profile in module_profiles:
-                modspec = "%s-%s/%s" % (module_default.module_name,
-                                        default_stream,
-                                        module_profile)
-                modspecs.append(modspec)
-        log.info("using %s defaults, selected modules: %s", profile_name, modspecs)
+            modspecs.append(module_default.module_name)
+        log.info("set %s as default profile, selected modules: %s", profile_name, modspecs)
+
         self._select_modules(modspecs)
 
     def _select_kernel_package(self):
