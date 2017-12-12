@@ -11,6 +11,7 @@ import glob
 import pydbus
 import time
 import sys
+import shutil
 from gi.repository import Gio
 
 try:
@@ -43,12 +44,37 @@ MODULES_DIR = os.path.join(top_dir ,"pyanaconda/modules")
 DBUS_SERVICES_DIR = os.path.join(top_dir, "data/dbus/")
 STARTUP_SCRIPT = os.path.join(top_dir, "scripts/start-module")
 EXEC_PATH = 'Exec=/usr/libexec/anaconda/start-module'
+KICKSTART_FILE = "ks.run_boss_locally.cfg"
 
 
 def start_anaconda_services():
     print(RED + "starting Boss" + RESET)
     test_dbus_connection.dbus.StartServiceByName(DBUS_BOSS_NAME, 0)
 
+def distribute_kickstart():
+    if not os.path.exists(KICKSTART_FILE):
+        return
+    tmpfile = tempfile.mktemp(suffix="ks.run_boss_locally.cfg")
+    shutil.copyfile(KICKSTART_FILE, tmpfile)
+    print(RED + "distributing kickstart {}".format(tmpfile) + RESET)
+    boss_object = test_dbus_connection.get(DBUS_BOSS_NAME)
+    try:
+        parsed_kickstart = boss_object.SplitKickstart(tmpfile)
+    except Exception as e:
+        print("distribute_kickstart: SplitKickstart() exception: {}".format(e))
+    else:
+        print("distribute_kickstart: SplitKickstart({}):\n{}".format(tmpfile, parsed_kickstart))
+        timeout = 10
+        while not boss_object.ModulesStartingFinished() and timeout > 0:
+            print("distribute_kickstart: waiting for modules to start")
+            time.sleep(1)
+            timeout = timeout - 1
+        errors = boss_object.DistributeKickstart()
+        print("distribute_kickstart: DistributeKickstart() errors: {}".format(errors))
+        unprocessed_kickstart = boss_object.UnprocessedKickstart()
+        print("distribute_kickstart: DistributeKickstart() unprocessed:\n{}".format(unprocessed_kickstart))
+    finally:
+        os.unlink(tmpfile)
 
 def stops_anaconda_services():
     print(RED + "stopping Boss" + RESET)
@@ -105,6 +131,8 @@ try:
 
     while(loop):
         start_anaconda_services()
+
+        distribute_kickstart()
 
         u_input = input()
 
