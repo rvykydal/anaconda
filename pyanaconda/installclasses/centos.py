@@ -48,6 +48,7 @@ class CentOSBaseInstallClass(BaseInstallClass):
     def configure(self, anaconda):
         BaseInstallClass.configure(self, anaconda)
 
+    # TODO MOD - Network? Boss?
     def setNetworkOnbootDefault(self, ksdata):
         if any(nd.onboot for nd in ksdata.network.network if nd.device):
             return
@@ -57,6 +58,7 @@ class CentOSBaseInstallClass(BaseInstallClass):
         if not dev:
             return
         # ignore wireless (its ifcfgs would need to be handled differently)
+        # TODO MOD see above
         if nm.nm_device_type_is_wifi(dev):
             return
         network.update_onboot_value(dev, True, ksdata=ksdata)

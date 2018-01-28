@@ -117,6 +117,7 @@ def check_vnc_can_be_started(anaconda):
         vnc_startup_possible = False
 
     # disable VNC question if we don't have network
+    # TODO MOD Network or NM
     if not nm_is_connecting() and not nm_is_connected():
         error_messages.append("Not asking for VNC because we don't have a network")
         vnc_startup_possible = False

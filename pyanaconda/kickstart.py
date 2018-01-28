@@ -203,6 +203,7 @@ def getEscrowCertificate(escrowCerts, url):
         return escrowCerts[url]
 
     needs_net = not url.startswith("/") and not url.startswith("file:")
+    # TODO MOD Network or NM
     if needs_net and not nm.nm_is_connected():
         msg = _("Escrow certificate %s requires the network.") % url
         raise KickstartError(msg)
@@ -693,6 +694,7 @@ class Fcoe(commands.fcoe.F13_Fcoe):
     def parse(self, args):
         fc = commands.fcoe.F13_Fcoe.parse(self, args)
 
+        # TODO MOD Network or NM
         if fc.nic not in nm.nm_devices():
             raise KickstartParseError(formatErrorMsg(self.lineno,
                     msg=_("NIC \"%s\" given in fcoe command does not exist.") % fc.nic))
@@ -834,6 +836,7 @@ class Iscsi(commands.iscsi.F17_Iscsi):
         tg = commands.iscsi.F17_Iscsi.parse(self, args)
 
         if tg.iface:
+            # TODO MOD Network or NM
             if not network.wait_for_network_devices([tg.iface]):
                 raise KickstartParseError(formatErrorMsg(self.lineno,
                         msg=_("Network interface \"%(nic)s\" required by iSCSI \"%(iscsiTarget)s\" target is not up.") %
@@ -842,6 +845,7 @@ class Iscsi(commands.iscsi.F17_Iscsi):
         mode = blivet.iscsi.iscsi.mode
         if mode == "none":
             if tg.iface:
+                # TODO MOD Network
                 blivet.iscsi.iscsi.create_interfaces(nm.nm_activated_devices())
         elif ((mode == "bind" and not tg.iface)
               or (mode == "default" and tg.iface)):
@@ -1233,10 +1237,12 @@ class Network(commands.network.F27_Network):
         return nd
 
     def setup(self):
+        # TODO MOD - will be moved to Netowrk.Packages
         if network.is_using_team_device():
             self.packages = ["teamd"]
 
     def execute(self, storage, ksdata, instClass):
+        # TODO MOD - task
         network.write_network_config(storage, ksdata, instClass, util.getSysroot())
 
 class Partition(commands.partition.F23_Partition):

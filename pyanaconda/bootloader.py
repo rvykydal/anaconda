@@ -830,6 +830,7 @@ class BootLoader(object):
                 # network storage
                 # XXX this is nothing to be proud of
                 if isinstance(dep, NetworkStorageDevice):
+                    # TODO MOD - Network (just nic, ev. traget hostname)
                     setup_args = pyanaconda.network.dracutSetupArgs(dep)
                     self.boot_args.update(setup_args)
                     self.dracut_args.update(setup_args)
@@ -858,6 +859,8 @@ class BootLoader(object):
         # fails to rename the iface (because of BFS booting from it).
         for nic, _dcb, _auto_vlan in fcoe().nics:
             try:
+                # TODO MOD - should not be used at all?
+                # NM, Network, util?
                 hwaddr = nm_device_hwaddress(nic)
             except ValueError:
                 continue

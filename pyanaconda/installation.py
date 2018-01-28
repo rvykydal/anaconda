@@ -56,6 +56,7 @@ class WriteResolvConfTask(Task):
         task queue was created, not when the task is actually executed, which could
         theoretically result in an incorrect path.
         """
+        # TODO MOD - rework
         network.copyFileToPath("/etc/resolv.conf", util.getSysroot())
 
 
@@ -98,6 +99,7 @@ def doConfiguration(storage, payload, ksdata, instClass):
     will_write_network = not flags.flags.imageInstall and not flags.flags.dirInstall
     if will_write_network:
         network_config = TaskQueue("Network configuration", N_("Writing network configuration"))
+        # TODO MOD - copy files task?
         network_config.append(Task("Network configuration",
                                    ksdata.network.execute, (storage, ksdata, instClass)))
         configuration_queue.append(network_config)
@@ -290,6 +292,7 @@ def doInstall(storage, payload, ksdata, instClass):
     pre_install = TaskQueue("Pre install tasks", N_("Running pre-installation tasks"))
     pre_install.append(Task("Setup authconfig", ksdata.authconfig.setup))
     pre_install.append(Task("Setup firewall", ksdata.firewall.setup))
+    # TODO PRE - Netowrk.RequiredPackages()
     pre_install.append(Task("Setup network", ksdata.network.setup))
     # Setup timezone and add chrony as package if timezone was set in KS
     # and "-chrony" wasn't in packages section and/or --nontp wasn't set.
@@ -310,6 +313,7 @@ def doInstall(storage, payload, ksdata, instClass):
         payload.requirements.add_packages(ksdata.realm.packages, reason="realm")
         payload.requirements.add_packages(ksdata.authconfig.packages, reason="authconfig")
         payload.requirements.add_packages(ksdata.firewall.packages, reason="firewall")
+        # TODO MOD Network.RequiredPackages
         payload.requirements.add_packages(ksdata.network.packages, reason="network")
         payload.requirements.add_packages(ksdata.timezone.packages, reason="ntp", strong=False)
 

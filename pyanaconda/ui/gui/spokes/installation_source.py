@@ -944,6 +944,7 @@ class SourceSpoke(NormalSpoke, GUISpokeInputCheckHandler):
                 widget.set_sensitive(False)
                 widget.set_tooltip_text(_("The installation source is in use by the installer and cannot be changed."))
 
+        # TODO MOD Network or NM
         if not nm.nm_is_connected():
             self._networkButton.set_sensitive(False)
             self._networkBox.set_sensitive(False)
@@ -1014,6 +1015,7 @@ class SourceSpoke(NormalSpoke, GUISpokeInputCheckHandler):
     # This method is shared by the checks on urlEntry and repoUrlEntry
     def _checkURL(self, inputcheck, combo):
         # Network is not up, don't check urls.
+        # TODO MOD Network or NM
         if not nm.nm_is_connected():
             return InputCheck.CHECK_OK
 

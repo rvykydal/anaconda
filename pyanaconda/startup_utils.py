@@ -260,6 +260,7 @@ def prompt_for_ssh():
     # to the user.
     import socket
 
+    # TODO MOD Network or util or NM
     ip = network.getFirstRealIP()
 
     if not ip:
@@ -273,6 +274,7 @@ def prompt_for_ssh():
         hinfo = socket.gethostbyaddr(ipstr)
     except socket.herror as e:
         stdout_log.debug("Exception caught trying to get host name of %s: %s", ipstr, e)
+        # TODO MOD Network or util or NM
         name = network.getHostname()
     else:
         if len(hinfo) == 3:

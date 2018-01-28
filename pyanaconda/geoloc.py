@@ -321,6 +321,7 @@ class LocationInfo(object):
         if threadMgr.get(constants.THREAD_GEOLOCATION_REFRESH):
             log.debug("Geoloc: refresh already in progress")
         else:  # wait for Internet connectivity
+            # TODO MOD Network or NM
             if network.wait_for_connectivity():
                 threadMgr.add(AnacondaThread(
                     name=constants.THREAD_GEOLOCATION_REFRESH,

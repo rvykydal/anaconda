@@ -246,6 +246,7 @@ class NTPconfigDialog(GUIObject, GUIDialogInputCheckHandler):
         if not server:
             return InputCheck.CHECK_SILENT
 
+        # TODO MOD - UI utils?
         (valid, error) = network.sanityCheckHostname(server)
         if not valid:
             return "'%s' is not a valid hostname: %s" % (server, error)
@@ -376,6 +377,7 @@ class NTPconfigDialog(GUIObject, GUIDialogInputCheckHandler):
         if not path:
             return
 
+        # TODO MOD - UI utils?
         (valid, error) = network.sanityCheckHostname(new_text)
         if not valid:
             log.error("'%s' is not a valid hostname: %s", new_text, error)
@@ -625,6 +627,7 @@ class DatetimeSpoke(FirstbootSpokeMixIn, NormalSpoke):
 
         self._update_datetime()
 
+        # TODO MOD Network or NM
         has_active_network = nm.nm_is_connected()
         if not has_active_network:
             self._show_no_network_warning()
@@ -1106,6 +1109,7 @@ class DatetimeSpoke(FirstbootSpokeMixIn, NormalSpoke):
                 #cannot touch runtime system, not much to do here
                 return
 
+            # TODO MOD Network or NM
             if not nm.nm_is_connected():
                 self._show_no_network_warning()
                 switch.set_active(False)

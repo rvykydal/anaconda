@@ -200,6 +200,7 @@ class ISCSIDialog(GUIObject):
             self.iscsi.delete_interfaces()
         elif (self.iscsi.mode == "bind"
               or self.iscsi.mode == "none" and bind):
+            # TODO MOD Network or NM
             activated = set(nm.nm_activated_devices())
             # The only place iscsi.ifaces is modified is create_interfaces(),
             # right below, so iteration is safe.
@@ -298,6 +299,7 @@ class ISCSIDialog(GUIObject):
         widget = self.builder.get_object("targetEntry")
         text = widget.get_text()
 
+        # TODO MOD UI client
         return check_ip_address(text)
 
     def _initiator_name_valid(self):

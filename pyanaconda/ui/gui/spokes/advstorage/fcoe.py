@@ -59,8 +59,11 @@ class FCoEDialog(GUIObject):
     def refresh(self):
         self._nicCombo.remove_all()
 
+        # TODO MOD Network or NM
         for devname in nm.nm_devices():
+            # TODO MOD Network or NM
             if nm.nm_device_type_is_ethernet(devname):
+                # TODO MOD Network or NM
                 self._nicCombo.append_text("%s - %s" % (devname, nm.nm_device_hwaddress(devname)))
 
         self._nicCombo.set_active(0)
