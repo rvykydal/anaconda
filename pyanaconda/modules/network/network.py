@@ -26,8 +26,15 @@ from pyanaconda.modules.base import KickstartModule
 from pyanaconda.modules.network.network_interface import NetworkInterface
 from pyanaconda.modules.network.network_kickstart import NetworkKickstartSpecification
 
+import gi
+gi.require_version("NM", "1.0")
+from gi.repository import NM
+
 HOSTNAME_SERVICE = "org.freedesktop.hostname1"
 HOSTNAME_PATH = "/org/freedesktop/hostname1"
+
+NM_SERVICE = "org.freedesktop.NetworkManager"
+NM_PATH = "/org/freedesktop/NetworkManager"
 
 from pyanaconda import anaconda_logging
 log = anaconda_logging.get_dbus_module_logger(__name__)
@@ -37,12 +44,22 @@ class NetworkModule(KickstartModule):
 
     def __init__(self):
         super().__init__()
+
         self.hostname_changed = Signal()
         self._hostname = "localhost.localdomain"
         self.current_hostname_changed = Signal()
         # TODO fallback solution (no hostnamed) ?
         self._hostname_service_proxy = pydbus.SystemBus().get(HOSTNAME_SERVICE, HOSTNAME_PATH)
         self._hostname_service_proxy.PropertiesChanged.connect(self._hostname_service_properties_changed)
+
+        self.connected_changed = Signal()
+        # TODO fallback solution (no NM, limited environment)
+        # TODO use Gio/GNetworkMonitor ?
+        # TODO use observer for NM?
+        self._nm_proxy = pydbus.SystemBus().get(NM_SERVICE, NM_PATH)
+        self._nm_proxy.StateChanged.connect(self._nm_state_changed)
+        initial_nm_state = self._nm_proxy.State
+        self.set_connected(self._nm_state_connected(initial_nm_state))
 
     def publish(self):
         """Publish the module."""
@@ -93,3 +110,26 @@ class NetworkModule(KickstartModule):
         """Set current system hostname."""
         self._hostname_service_proxy.SetHostname(hostname, False)
         log.debug("Current hostname is set to %s", hostname)
+
+    @property
+    def connected(self):
+        """Is the system connected to the network?"""
+        return self._connected
+
+    def set_connected(self, connected):
+        """Set network connectivity status."""
+        self._connected = connected
+        self.connected_changed.emit()
+        log.debug("Connected to network: %s", connected)
+
+    def is_connecting(self):
+        """Is NM in connecting state?"""
+        return self._nm_proxy.State == NM.State.CONNECTING
+
+    @staticmethod
+    def _nm_state_connected(state):
+        return state in (NM.State.CONNECTED_LOCAL, NM.State.CONNECTED_SITE, NM.State.CONNECTED_GLOBAL)
+
+    def _nm_state_changed(self, state):
+        log.debug("NeworkManager state changed to %s", state)
+        self.set_connected(self._nm_state_connected(state))
