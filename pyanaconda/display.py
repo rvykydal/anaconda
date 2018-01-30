@@ -31,7 +31,8 @@ from pyanaconda.core import util, constants
 from pyanaconda import vnc
 from pyanaconda.core.i18n import _
 from pyanaconda.flags import flags
-from pyanaconda.nm import nm_is_connected, nm_is_connecting
+from pyanaconda.dbus import DBus
+from pyanaconda.dbus.constants import MODULE_NETWORK_NAME, MODULE_NETWORK_PATH
 from pyanaconda.ui.tui.spokes.askvnc import AskVNCSpoke
 from pyanaconda.ui.tui import tui_quit_callback
 # needed for checking if the pyanaconda.ui.gui modules are available
@@ -117,7 +118,8 @@ def check_vnc_can_be_started(anaconda):
         vnc_startup_possible = False
 
     # disable VNC question if we don't have network
-    if not nm_is_connecting() and not nm_is_connected():
+    network_proxy = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
+    if not network_proxy.IsConnecting() and not network_proxy.Connected:
         error_messages.append("Not asking for VNC because we don't have a network")
         vnc_startup_possible = False
 

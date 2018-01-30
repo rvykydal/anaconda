@@ -49,7 +49,9 @@ from pyanaconda.ui.gui.utils import gtk_call_once, really_hide, really_show, fan
 from pyanaconda.threading import threadMgr, AnacondaThread
 from pyanaconda.payload import PackagePayload, payloadMgr
 from pyanaconda.core.regexes import REPO_NAME_VALID, URL_PARSE, HOSTNAME_PATTERN_WITHOUT_ANCHORS
-from pyanaconda import nm
+
+from pyanaconda.dbus.observer import DBusCachedObserver
+from pyanaconda.dbus.constants import MODULE_NETWORK_NAME, MODULE_NETWORK_PATH
 
 from blivet.util import get_mount_device, get_mount_paths
 
@@ -394,6 +396,11 @@ class SourceSpoke(NormalSpoke, GUISpokeInputCheckHandler):
 
         self._repoChecks = {}
         self._repoStore_lock = threading.Lock()
+
+        self._network_module = DBusCachedObserver(MODULE_NETWORK_NAME,
+                                                  MODULE_NETWORK_PATH,
+                                                  [MODULE_NETWORK_NAME])
+        self._network_module.connect()
 
     def apply(self):
         # If askmethod was provided on the command line, entering the source
@@ -944,7 +951,7 @@ class SourceSpoke(NormalSpoke, GUISpokeInputCheckHandler):
                 widget.set_sensitive(False)
                 widget.set_tooltip_text(_("The installation source is in use by the installer and cannot be changed."))
 
-        if not nm.nm_is_connected():
+        if not self._network_module.proxy.Connected:
             self._networkButton.set_sensitive(False)
             self._networkBox.set_sensitive(False)
 
@@ -1014,7 +1021,7 @@ class SourceSpoke(NormalSpoke, GUISpokeInputCheckHandler):
     # This method is shared by the checks on urlEntry and repoUrlEntry
     def _checkURL(self, inputcheck, combo):
         # Network is not up, don't check urls.
-        if not nm.nm_is_connected():
+        if not self._network_module.proxy.Connected:
             return InputCheck.CHECK_OK
 
         # If combo is not set inputcheck holds repo

@@ -37,7 +37,7 @@ import pykickstart.commands as commands
 
 from contextlib import contextmanager
 
-from pyanaconda import keyboard, localization, network, nm, ntp, screen_access, timezone
+from pyanaconda import keyboard, localization, network, ntp, screen_access, timezone
 from pyanaconda.core import util
 from pyanaconda.addons import AddonSection, AddonData, AddonRegistry, collect_addon_paths
 from pyanaconda.bootloader import GRUB2, get_bootloader
@@ -54,6 +54,8 @@ from pyanaconda.storage_utils import device_matches, try_populate_devicetree
 from pyanaconda.threading import threadMgr
 from pyanaconda.timezone import NTP_PACKAGE, NTP_SERVICE
 from pyanaconda.users import getPassAlgo
+from pyanaconda.dbus import DBus
+from pyanaconda.dbus.constants import MODULE_NETWORK_NAME, MODULE_NETWORK_PATH
 
 from blivet import udev
 from blivet.deviceaction import ActionCreateFormat, ActionResizeDevice, ActionResizeFormat
@@ -203,9 +205,11 @@ def getEscrowCertificate(escrowCerts, url):
         return escrowCerts[url]
 
     needs_net = not url.startswith("/") and not url.startswith("file:")
-    if needs_net and not nm.nm_is_connected():
-        msg = _("Escrow certificate %s requires the network.") % url
-        raise KickstartError(msg)
+    if needs_net:
+        network_proxy = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
+        if not network_proxy.Connected:
+            msg = _("Escrow certificate %s requires the network.") % url
+            raise KickstartError(msg)
 
     escrow_log.info("escrow: downloading %s", url)
 

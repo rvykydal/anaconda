@@ -40,7 +40,6 @@ from pyanaconda.ui.helpers import InputCheck
 from pyanaconda.core import util, constants
 from pyanaconda import isys
 from pyanaconda import network
-from pyanaconda import nm
 from pyanaconda import ntp
 from pyanaconda import flags
 from pyanaconda.threading import threadMgr, AnacondaThread
@@ -49,6 +48,9 @@ from pyanaconda.core.async_utils import async_action_wait, async_action_nowait
 from pyanaconda.timezone import NTP_SERVICE, get_all_regions_and_timezones, get_timezone, is_valid_timezone
 from pyanaconda.localization import get_xlated_timezone, resolve_date_format
 from pyanaconda.core.timer import Timer
+
+from pyanaconda.dbus.observer import DBusCachedObserver
+from pyanaconda.dbus.constants import MODULE_NETWORK_NAME, MODULE_NETWORK_PATH
 
 import datetime
 import re
@@ -429,6 +431,11 @@ class DatetimeSpoke(FirstbootSpokeMixIn, NormalSpoke):
         self._shown = False
         self._tz = None
 
+        self._network_module = DBusCachedObserver(MODULE_NETWORK_NAME,
+                                                  MODULE_NETWORK_PATH,
+                                                  [MODULE_NETWORK_NAME])
+        self._network_module.connect()
+
     def initialize(self):
         NormalSpoke.initialize(self)
         self.initialize_start()
@@ -625,7 +632,7 @@ class DatetimeSpoke(FirstbootSpokeMixIn, NormalSpoke):
 
         self._update_datetime()
 
-        has_active_network = nm.nm_is_connected()
+        has_active_network = self._network_module.proxy.Connected
         if not has_active_network:
             self._show_no_network_warning()
         else:
@@ -1106,7 +1113,7 @@ class DatetimeSpoke(FirstbootSpokeMixIn, NormalSpoke):
                 #cannot touch runtime system, not much to do here
                 return
 
-            if not nm.nm_is_connected():
+            if not self._network_module.proxy.Connected:
                 self._show_no_network_warning()
                 switch.set_active(False)
                 return
