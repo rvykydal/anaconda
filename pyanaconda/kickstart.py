@@ -37,7 +37,7 @@ import pykickstart.commands as commands
 
 from contextlib import contextmanager
 
-from pyanaconda import keyboard, localization, network, nm, ntp, screen_access, timezone
+from pyanaconda import keyboard, localization, network, ntp, screen_access, timezone
 from pyanaconda.core import util
 from pyanaconda.addons import AddonSection, AddonData, AddonRegistry, collect_addon_paths
 from pyanaconda.bootloader import GRUB2, get_bootloader
@@ -46,7 +46,8 @@ from pyanaconda.core.constants import ADDON_PATHS, IPMI_ABORTED, TEXT_ONLY_TARGE
 from pyanaconda.dbus import DBus
 from pyanaconda.dbus.constants import MODULE_TIMEZONE_NAME, MODULE_TIMEZONE_PATH, DBUS_BOSS_NAME, \
     DBUS_BOSS_PATH, MODULE_LOCALIZATION_NAME, MODULE_LOCALIZATION_PATH, MODULE_SECURITY_NAME, \
-    MODULE_SECURITY_PATH, MODULE_USER_NAME, MODULE_USER_PATH
+    MODULE_SECURITY_PATH, MODULE_USER_NAME, MODULE_USER_PATH, MODULE_NETWORK_NAME, \
+    MODULE_NETWORK_PATH
 from pyanaconda.desktop import Desktop
 from pyanaconda.errors import ScriptError, errorHandler
 from pyanaconda.flags import flags, can_touch_runtime_system
@@ -208,9 +209,11 @@ def getEscrowCertificate(escrowCerts, url):
         return escrowCerts[url]
 
     needs_net = not url.startswith("/") and not url.startswith("file:")
-    if needs_net and not nm.nm_is_connected():
-        msg = _("Escrow certificate %s requires the network.") % url
-        raise KickstartError(msg)
+    if needs_net:
+        network_proxy = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
+        if not network_proxy.Connected:
+            msg = _("Escrow certificate %s requires the network.") % url
+            raise KickstartError(msg)
 
     escrow_log.info("escrow: downloading %s", url)
 
