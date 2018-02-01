@@ -18,7 +18,6 @@
 # Red Hat, Inc.
 #
 
-import pydbus
 from pyanaconda.dbus import DBus, SystemBus
 from pyanaconda.dbus.constants import MODULE_NETWORK_NAME, MODULE_NETWORK_PATH
 from pyanaconda.core.signal import Signal
@@ -33,9 +32,6 @@ from gi.repository import NM
 HOSTNAME_SERVICE = "org.freedesktop.hostname1"
 HOSTNAME_PATH = "/org/freedesktop/hostname1"
 HOSTNAME_INTERFACE = "org.freedesktop.hostname1"
-
-NM_SERVICE = "org.freedesktop.NetworkManager"
-NM_PATH = "/org/freedesktop/NetworkManager"
 
 from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
@@ -56,11 +52,11 @@ class NetworkModule(KickstartModule):
         self.connected_changed = Signal()
         # TODO fallback solution (no NM, limited environment)
         # TODO use Gio/GNetworkMonitor ?
-        # TODO use observer for NM?
-        self._nm_proxy = pydbus.SystemBus().get(NM_SERVICE, NM_PATH)
-        self._nm_proxy.StateChanged.connect(self._nm_state_changed)
-        initial_nm_state = self._nm_proxy.State
+        self.nm_client = NM.Client.new(None)
+        self.nm_client.connect("notify::%s" % NM.CLIENT_STATE, self._nm_state_changed)
+        initial_nm_state = self.nm_client.get_state()
         self.set_connected(self._nm_state_connected(initial_nm_state))
+
 
     def _get_hostname_service_observer(self):
         """Get an observer of the hostname service."""
@@ -144,12 +140,13 @@ class NetworkModule(KickstartModule):
 
     def is_connecting(self):
         """Is NM in connecting state?"""
-        return self._nm_proxy.State == NM.State.CONNECTING
+        return self.nm_client.get_state() == NM.State.CONNECTING
 
     @staticmethod
     def _nm_state_connected(state):
         return state in (NM.State.CONNECTED_LOCAL, NM.State.CONNECTED_SITE, NM.State.CONNECTED_GLOBAL)
 
-    def _nm_state_changed(self, state):
+    def _nm_state_changed(self, *args):
+        state = self.nm_client.get_state()
         log.debug("NeworkManager state changed to %s", state)
         self.set_connected(self._nm_state_connected(state))
