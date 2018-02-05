@@ -86,3 +86,14 @@ class NetworkInterface(KickstartModuleInterface):
         Internal API used for networking initialization.
         """
         return self.implementation.is_connecting
+
+    def CreateDeviceConfigurations(self):
+        """Create device configuration objects from existing ifcfg files.
+
+        Device configuration binds supported device names to connections and
+        ifcfg files holding their persistent configuration on target system.
+
+        Used to generate kickstart.
+        Used by user interface for configuring networking (ie nm-c-e)
+        """
+        self.implementation.create_device_configurations()
