@@ -24,7 +24,8 @@ from pyanaconda.dbus.constants import MODULE_NETWORK_NAME, MODULE_NETWORK_PATH
 from pyanaconda.core.signal import Signal
 from pyanaconda.modules.base import KickstartModule
 from pyanaconda.modules.network.network_interface import NetworkInterface
-from pyanaconda.modules.network.network_kickstart import NetworkKickstartSpecification
+from pyanaconda.modules.network.network_kickstart import NetworkKickstartSpecification, \
+    update_network_hostname_data
 from pyanaconda.modules.network.device_configuration import DeviceConfigurations
 from pyanaconda.modules.network.nm_client import nm_client
 
@@ -61,6 +62,7 @@ class NetworkModule(KickstartModule):
         initial_nm_state = self.nm_client.get_state()
         self.set_connected(self._nm_state_connected(initial_nm_state))
 
+        self._original_network_data = []
         self._device_configurations = None
 
     def publish(self):
@@ -75,16 +77,30 @@ class NetworkModule(KickstartModule):
 
     def process_kickstart(self, data):
         """Process the kickstart data."""
+        log.debug("kickstart to be processed:\n%s", str(data))
+
+        self._original_network_data = data.network.network
         if data.network.hostname:
             self.set_hostname(data.network.hostname)
 
+        log.debug("processed kickstart:\n%s", str(data))
+
     def generate_kickstart(self):
         """Retrurn the kickstart string."""
+
         data = self.get_kickstart_data()
-        data.network.network = []
-        # hostname
+        if self._device_configurations:
+            device_data = self._device_configurations.get_kickstart_data(data.NetworkData)
+            log.debug("using device configurations to generate kickstart")
+        else:
+            device_data = self._original_network_data
+            log.debug("using original kickstart data to generate kickstart")
+        data.network.network = device_data
+
         hostname_data = data.NetworkData(hostname=self.hostname, bootProto="")
-        data.network.network.append(hostname_data)
+        update_network_hostname_data(data.network.network, hostname_data)
+
+        log.debug("generated kickstart:\n%s", str(data))
         return str(data)
 
     @property
