@@ -86,3 +86,6 @@ class NetworkInterface(KickstartModuleInterface):
         Internal API used for networking initialization.
         """
         return self.implementation.is_connecting
+
+    def CreateDeviceConfigurations(self):
+        self.implementation.create_device_configurations()

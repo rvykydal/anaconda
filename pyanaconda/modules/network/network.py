@@ -25,6 +25,7 @@ from pyanaconda.core.signal import Signal
 from pyanaconda.modules.base import KickstartModule
 from pyanaconda.modules.network.network_interface import NetworkInterface
 from pyanaconda.modules.network.network_kickstart import NetworkKickstartSpecification
+from pyanaconda.modules.network.device_configuration import DeviceConfigurations
 
 import gi
 gi.require_version("NM", "1.0")
@@ -35,6 +36,7 @@ HOSTNAME_PATH = "/org/freedesktop/hostname1"
 
 from pyanaconda import anaconda_logging
 log = anaconda_logging.get_dbus_module_logger(__name__)
+
 
 class NetworkModule(KickstartModule):
     """The Network module."""
@@ -56,6 +58,8 @@ class NetworkModule(KickstartModule):
         self.nm_client.connect("notify::%s" % NM.CLIENT_STATE, self._nm_state_changed)
         initial_nm_state = self.nm_client.get_state()
         self.set_connected(self._nm_state_connected(initial_nm_state))
+
+        self._device_configurations = None
 
     def publish(self):
         """Publish the module."""
@@ -130,3 +134,10 @@ class NetworkModule(KickstartModule):
         state = self.nm_client.get_state()
         log.debug("NeworkManager state changed to %s", state)
         self.set_connected(self._nm_state_connected(state))
+
+    def create_device_configurations(self):
+        # TODO use get_all_devices?, virtual configs? test this
+        # TODO: idempotent?
+        self._device_configurations = DeviceConfigurations(self.nm_client)
+        self._device_configurations.reload()
+        log.debug("%s", self._device_configurations)
