@@ -22,6 +22,7 @@ import os
 
 # TODO move to anaconda.core
 from pyanaconda.simpleconfig import SimpleConfigFile
+from pyanaconda.modules.network import nm_client
 
 from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
