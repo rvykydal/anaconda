@@ -26,6 +26,7 @@ from pyanaconda.modules.base import KickstartModule
 from pyanaconda.modules.network.network_interface import NetworkInterface
 from pyanaconda.modules.network.network_kickstart import NetworkKickstartSpecification
 from pyanaconda.modules.network.device_configuration import DeviceConfigurations
+from pyanaconda.modules.network.nm_client import nm_client
 
 import gi
 gi.require_version("NM", "1.0")
@@ -37,6 +38,7 @@ HOSTNAME_PATH = "/org/freedesktop/hostname1"
 from pyanaconda import anaconda_logging
 log = anaconda_logging.get_dbus_module_logger(__name__)
 
+# TODO abstract out NetworkManager/client
 
 class NetworkModule(KickstartModule):
     """The Network module."""
@@ -54,7 +56,7 @@ class NetworkModule(KickstartModule):
         self.connected_changed = Signal()
         # TODO fallback solution (no NM, limited environment)
         # TODO use Gio/GNetworkMonitor ?
-        self.nm_client = NM.Client.new(None)
+        self.nm_client = nm_client
         self.nm_client.connect("notify::%s" % NM.CLIENT_STATE, self._nm_state_changed)
         initial_nm_state = self.nm_client.get_state()
         self.set_connected(self._nm_state_connected(initial_nm_state))
