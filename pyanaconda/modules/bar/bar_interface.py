@@ -30,3 +30,6 @@ class BarInterface(KickstartModuleInterface):
 
     def SetTimezone(self, timezone: Str):
         self.implementation.set_timezone(timezone)
+
+    def WatchNetworkConfiguration(self):
+        self.implementation.watch_network_configuration()

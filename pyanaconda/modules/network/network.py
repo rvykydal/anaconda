@@ -23,7 +23,7 @@ from pyanaconda.dbus import DBus
 from pyanaconda.dbus.constants import MODULE_NETWORK_NAME, MODULE_NETWORK_PATH
 from pyanaconda.core.signal import Signal
 from pyanaconda.modules.base import KickstartModule
-from pyanaconda.modules.network.network_interface import NetworkInterface
+from pyanaconda.modules.network.network_interface import NetworkInterface, device_configuration_to_dbus
 from pyanaconda.modules.network.network_kickstart import NetworkKickstartSpecification, \
     update_network_hostname_data
 from pyanaconda.modules.network.device_configuration import DeviceConfigurations
@@ -64,6 +64,7 @@ class NetworkModule(KickstartModule):
 
         self._original_network_data = []
         self._device_configurations = None
+        self.configuration_changed = Signal()
 
     def publish(self):
         """Publish the module."""
@@ -161,7 +162,14 @@ class NetworkModule(KickstartModule):
         self._device_configurations.reload()
         self._device_configurations.connect()
 
+    def get_device_configurations(self):
+        if not self._device_configurations:
+            return []
+        return [dev_cfg.get_values() for dev_cfg in self._device_configurations.get_all()]
+
     def device_configurations_changed_cb(self, old_dev_cfg, new_dev_cfg):
         log.debug("Configuration changed: %s -> %s", old_dev_cfg, new_dev_cfg)
         log.debug("%s", self._device_configurations)
+        self.configuration_changed.emit([(device_configuration_to_dbus(old_dev_cfg),
+                                          device_configuration_to_dbus(new_dev_cfg))])
 
