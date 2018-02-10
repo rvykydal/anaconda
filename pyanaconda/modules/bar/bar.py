@@ -19,7 +19,7 @@
 #
 from pyanaconda.dbus import DBus
 from pyanaconda.dbus.constants import MODULE_BAR_PATH, MODULE_BAR_NAME, MODULE_TIMEZONE_NAME, \
-    MODULE_TIMEZONE_PATH
+    MODULE_TIMEZONE_PATH, MODULE_NETWORK_NAME, MODULE_NETWORK_PATH
 from pyanaconda.modules.bar.kickstart import BarKickstartSpecification
 from pyanaconda.modules.common.base import KickstartModule
 from pyanaconda.modules.bar.bar_interface import BarInterface
@@ -38,6 +38,9 @@ class Bar(KickstartModule):
         self._timezone_module = DBus.get_cached_observer(MODULE_TIMEZONE_NAME,
                                                          MODULE_TIMEZONE_PATH,
                                                          [MODULE_TIMEZONE_NAME])
+        self._network_module = DBus.get_cached_observer(MODULE_NETWORK_NAME,
+                                                        MODULE_NETWORK_PATH,
+                                                        [MODULE_NETWORK_NAME])
 
     def publish(self):
         """Publish the module."""
@@ -49,6 +52,8 @@ class Bar(KickstartModule):
         # Start to watch the timezone module.
         self._timezone_module.cached_properties_changed.connect(self._timezone_callback)
         self._timezone_module.connect_once_available()
+
+        self._network_module.connect_once_available()
 
     @property
     def kickstart_specification(self):
@@ -74,3 +79,10 @@ class Bar(KickstartModule):
         log.debug("Timezone set to: %s", timezone)
         self._timezone_module.proxy.SetTimezone(timezone)
         self._timezone_debug()
+
+    def watch_network_configuration(self):
+        self._network_module.proxy.DeviceConfigurationChanged.connect(self._network_callback)
+
+    def _network_callback(self, changes):
+        for old, new in changes:
+            log.debug("Network Configuartion changed: %s -> %s", old, new)
