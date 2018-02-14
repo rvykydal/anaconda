@@ -22,11 +22,23 @@ from pykickstart.version import F28
 from pyanaconda.core.kickstart import KickstartSpecification
 
 
+class Network(F27_Network):
+    def parse(self, args):
+        hostname_only_command = is_hostname_only_network_args(args)
+        # call the overridden command to do it's job first
+        retval = F27_Network.parse(self, args)
+
+        if hostname_only_command:
+            retval.bootProto = ""
+
+        return retval
+
+
 class NetworkKickstartSpecification(KickstartSpecification):
 
     version = F28
     commands = {
-        "network": F27_Network,
+        "network": Network,
     }
     commands_data = {
         "NetworkData": F27_NetworkData,
@@ -42,6 +54,10 @@ def update_network_hostname_data(network_data_list, hostname_data):
             hostname_found = True
     if not hostname_found:
         network_data_list.append(hostname_data)
+
+def is_hostname_only_network_args(args):
+    return (len(args) == 1 and args[0].startswith("--hostname") or
+            len(args) == 2 and "--hostname" in args)
 
 def default_ks_vlan_interface_name(parent, vlanid):
     return "%s.%s" % (parent, vlanid)
