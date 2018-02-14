@@ -100,6 +100,13 @@ class NetworkInterface(KickstartModuleInterface):
         """Signal change of network devices configurations."""
         pass
 
+    def SetDefaultKickstartDeviceSpecification(self, specification: Str):
+        """Sets device specification for missing --device kickstart option.
+
+        :param specification: kickstart network --device option specification
+        """
+        self.implementation.default_device_specification = specification
+
 
 def device_configuration_to_dbus(dev_cfg):
     if not dev_cfg:

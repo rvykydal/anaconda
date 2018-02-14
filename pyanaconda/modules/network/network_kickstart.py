@@ -21,6 +21,7 @@ from pykickstart.commands.network import F27_Network, F27_NetworkData
 from pykickstart.version import F28
 from pyanaconda.modules.base_kickstart import KickstartSpecification
 
+DEFAULT_DEVICE_SPECIFICATION = "link"
 
 class Network(F27_Network):
     def parse(self, args):
@@ -55,9 +56,20 @@ def update_network_hostname_data(network_data_list, hostname_data):
     if not hostname_found:
         network_data_list.append(hostname_data)
 
+def update_network_data_with_default_device(network_data_list, device_specification):
+    updated = False
+    for nd in network_data_list:
+        if not nd.device and not is_hostname_only_network_data(nd):
+            nd.device = device_specification
+            updated = True
+    return updated
+
 def is_hostname_only_network_args(args):
     return (len(args) == 1 and args[0].startswith("--hostname") or
             len(args) == 2 and "--hostname" in args)
+
+def is_hostname_only_network_data(network_data):
+    return network_data.bootProto == ""
 
 def default_ks_vlan_interface_name(parent, vlanid):
     return "%s.%s" % (parent, vlanid)
