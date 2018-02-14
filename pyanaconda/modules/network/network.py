@@ -24,7 +24,7 @@ from pyanaconda.core.signal import Signal
 from pyanaconda.modules.common.base import KickstartModule
 from pyanaconda.modules.network.network_interface import NetworkInterface, device_configuration_to_dbus
 from pyanaconda.modules.network.kickstart import NetworkKickstartSpecification, \
-    update_network_hostname_data
+    update_network_hostname_data, update_network_data_with_default_device, DEFAULT_DEVICE_SPECIFICATION
 from pyanaconda.modules.network.device_configuration import DeviceConfigurations
 from pyanaconda.modules.network.nm_client import nm_client
 
@@ -66,6 +66,8 @@ class NetworkModule(KickstartModule):
         self._device_configurations = None
         self.configuration_changed = Signal()
 
+        self._default_device_specification = DEFAULT_DEVICE_SPECIFICATION
+
     def _get_hostname_service_observer(self):
         """Get an observer of the hostname service."""
         service = SystemBus.get_cached_observer(
@@ -87,9 +89,29 @@ class NetworkModule(KickstartModule):
         """Return the kickstart specififcation."""
         return NetworkKickstartSpecification
 
+    @property
+    def default_device_specification(self):
+        """Get the default specification for missing kickstart --device option."""
+        return self._default_device_specification
+
+    @default_device_specification.setter
+    def default_device_specification(self, specification):
+        """Set the default specification for missing kickstart --device option.
+
+        :param specifiacation: device specification accepted by network --device option
+        :type specification: str
+        """
+        self._default_device_specification = specification
+        log.debug("default kickstart device specification set to %s", specification)
+
     def process_kickstart(self, data):
         """Process the kickstart data."""
         log.debug("kickstart to be processed:\n%s", str(data))
+
+        # Handle default value for --device
+        spec = self.default_device_specification
+        if update_network_data_with_default_device(data.network.network, spec):
+            log.debug("used '%s' for missing network --device options", spec)
 
         self._original_network_data = data.network.network
         if data.network.hostname:
