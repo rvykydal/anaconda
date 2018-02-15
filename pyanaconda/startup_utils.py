@@ -41,7 +41,8 @@ from pyanaconda.flags import can_touch_runtime_system
 from pyanaconda.screensaver import inhibit_screensaver
 
 from pyanaconda.dbus import DBus
-from pyanaconda.dbus.constants import DBUS_BOSS_NAME, DBUS_BOSS_PATH
+from pyanaconda.dbus.constants import DBUS_BOSS_NAME, DBUS_BOSS_PATH, MODULE_NETWORK_NAME, \
+    MODULE_NETWORK_PATH
 from pyanaconda.modules.boss.kickstart_manager import SplitKickstartError
 
 import blivet
@@ -428,6 +429,12 @@ def distribute_kickstart_with_boss(kickstart_path):
     if not timeout:
         log.warning("Waiting for modules to be started timed out")
         return False
+
+    network = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
+    ksdevice = flags.cmdline.get('ksdevice')
+    if ksdevice:
+        network.SetDefaultKickstartDeviceSpecification(ksdevice)
+        log.debug("value for missing network --device set from ksdevice to %s", ksdevice)
 
     errors = boss.DistributeKickstart()
     if errors:
