@@ -1504,6 +1504,13 @@ def apply_kickstart(ksdata):
     return applied_devices
 
 def networkInitialize(ksdata):
+
+    network_proxy = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
+    ksdevice = flags.cmdline.get('ksdevice')
+    if ksdevice:
+        network_proxy.SetDefaultKickstartDeviceSpecification(ksdevice)
+        log.debug("value for missing network --device set from ksdevice to %s", ksdevice)
+
     if not can_touch_runtime_system("networkInitialize", touch_live=True):
         return
 
@@ -1540,7 +1547,6 @@ def networkInitialize(ksdata):
         logIfcfgFiles(msg)
 
     # initialize ksdata hostname
-    network_proxy = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
     if network_proxy.Hostname == DEFAULT_HOSTNAME:
         bootopts_hostname = hostname_from_cmdline(flags.cmdline)
         if bootopts_hostname:
