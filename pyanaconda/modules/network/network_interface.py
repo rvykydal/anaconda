@@ -107,6 +107,15 @@ class NetworkInterface(KickstartModuleInterface):
         """
         self.implementation.default_device_specification = specification
 
+    def ConsolidateInitramfsConnections(self) -> List[Str]:
+        """Ensure devices configured in initramfs have no more than one NM connection.
+
+        This should be used only in installer environment.
+
+        :returns: list of device names which have been cosolidated
+        """
+        return self.implementation.consolidate_initramfs_connections()
+
 
 def device_configuration_to_dbus(dev_cfg):
     if not dev_cfg:
