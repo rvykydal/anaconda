@@ -164,3 +164,4 @@ class NetworkModule(KickstartModule):
     def device_configurations_changed_cb(self, old_dev_cfg, new_dev_cfg):
         log.debug("Configuration changed: %s -> %s", old_dev_cfg, new_dev_cfg)
         log.debug("%s", self._device_configurations)
+
