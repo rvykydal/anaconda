@@ -20,6 +20,7 @@
 from pykickstart.commands.network import F27_Network, F27_NetworkData
 from pykickstart.version import F28
 from pyanaconda.modules.base_kickstart import KickstartSpecification
+from pykickstart.constants import BIND_TO_MAC
 
 DEFAULT_DEVICE_SPECIFICATION = "link"
 
@@ -63,6 +64,15 @@ def update_network_data_with_default_device(network_data_list, device_specificat
             nd.device = device_specification
             updated = True
     return updated
+
+def update_first_network_command_activate_value(network_data_list):
+    if network_data_list:
+        nd = network_data_list[0]
+        if not is_hostname_only_network_data(nd):
+            if nd.activate is None:
+                nd.activate = True
+                return True
+    return False
 
 def is_hostname_only_network_args(args):
     return (len(args) == 1 and args[0].startswith("--hostname") or
