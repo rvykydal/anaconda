@@ -1518,7 +1518,8 @@ def networkInitialize(ksdata):
     logIfcfgFiles("network initialization")
 
     log.debug("ensure single initramfs connections")
-    devnames = ensure_single_initramfs_connections()
+    network_proxy = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
+    devnames = network_proxy.ConsolidateInitramfsConnections()
     if devnames:
         msg = "single connection ensured for devices %s" % devnames
         log.debug("%s", msg)
