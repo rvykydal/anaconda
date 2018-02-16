@@ -25,8 +25,9 @@ from pyanaconda.modules.common.base import KickstartModule
 from pyanaconda.modules.network.network_interface import NetworkInterface, device_configuration_to_dbus
 from pyanaconda.modules.network.kickstart import NetworkKickstartSpecification, \
     update_network_hostname_data, update_network_data_with_default_device, DEFAULT_DEVICE_SPECIFICATION
-from pyanaconda.modules.network.device_configuration import DeviceConfigurations
-from pyanaconda.modules.network.nm_client import nm_client
+from pyanaconda.modules.network.device_configuration import DeviceConfigurations, supported_device_types
+from pyanaconda.modules.network.nm_client import nm_client, get_device_name_from_network_data, \
+    add_connection_from_ksdata, update_connection_from_ksdata
 from pyanaconda.modules.network.ifcfg import find_ifcfg_file_of_device, ifcfg_is_from_kickstart, \
     find_ifcfg_uuid_of_device
 
@@ -69,6 +70,7 @@ class NetworkModule(KickstartModule):
         self.configuration_changed = Signal()
 
         self._default_device_specification = DEFAULT_DEVICE_SPECIFICATION
+        self._bootif = None
 
     def _get_hostname_service_observer(self):
         """Get an observer of the hostname service."""
@@ -290,3 +292,81 @@ class NetworkModule(KickstartModule):
                     msg = "activating"
         log.debug("ensure active ifcfg connection for %s (%s -> %s): %s",
                   iface, active_uuid, ifcfg_uuid, msg)
+
+    def get_supported_devices(self):
+        """Get names of existing supported devices on the system."""
+        return [device.get_iface() for device in self.nm_client.get_devices()
+                if device.get_device_type() in supported_device_types]
+
+    @property
+    def bootif(self):
+        """Get the value of kickstart --bootif option."""
+        return self._bootif
+
+    @bootif.setter
+    def bootif(self, specification):
+        """Set the value of kickstart --bootif option.
+
+        :param specifiacation: mac address specified in kickstart --bootif option
+        :type specification: str
+        """
+        self._bootif = specification
+        log.debug("bootif device specification is set to %s", specification)
+
+    def apply_kickstart(self):
+        """Apply kickstart configuration which has not already been applied.
+
+        * Activate configurations created in initramfs if --activate is True.
+        * Create configurations for %pre kickstart commands and activate eventually.
+
+        :returns: list of devices to which kickstart configuration was applied
+        """
+
+        applied_devices = []
+
+        if not self._original_network_data:
+            log.debug("No kickstart data to apply.")
+            return []
+
+        for network_data in self._original_network_data:
+
+            # Wireless is not supported
+            if network_data.essid:
+                continue
+
+            supported_devices = self.get_supported_devices()
+            device_name = get_device_name_from_network_data(network_data,
+                                                            supported_devices,
+                                                            self._bootif)
+            if not device_name:
+                log.warning("apply kickstart: --device %s not found", network_data.device)
+
+            ifcfg_path = find_ifcfg_file_of_device(device_name)
+            if ifcfg_path:
+                if ifcfg_is_from_kickstart(ifcfg_path):
+                    if network_data.activate:
+                        self._ensure_active_ifcfg_connection_for_device(device_name)
+                        applied_devices.append(device_name)
+                    continue
+
+            # If there is no kickstart ifcfg from initramfs the command was added
+            # in %pre section after switch root, so apply it now
+            applied_devices.append(device_name)
+            if ifcfg_path:
+                # if the device was already configured in initramfs update the settings
+                con_uuid = find_ifcfg_uuid_of_device(device_name)
+                log.debug("pre kickstart - updating settings %s of device %s",
+                          con_uuid, device_name)
+                update_connection_from_ksdata(con_uuid, network_data, device_name=device_name)
+                if network_data.activate:
+                    connection = self.nm_client.get_connection_by_uuid(con_uuid)
+                    device = self.nm_client.get_device_by_iface(device_name)
+                    self.nm_client.activate_connection_async(connection, device, None, None)
+                    log.debug("pre kickstart - activating connection %s with device %s",
+                              con_uuid, device_name)
+            else:
+                log.debug("pre kickstart - adding connection for %s", device_name)
+                add_connection_from_ksdata(network_data, device_name,
+                                           activate=network_data.activate)
+
+        return applied_devices
