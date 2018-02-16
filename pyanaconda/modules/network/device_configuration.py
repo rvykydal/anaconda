@@ -22,6 +22,7 @@ from pyanaconda.core.regexes import IBFT_CONFIGURED_DEVICE_NAME
 from pyanaconda.core.signal import Signal
 from pyanaconda.modules.network import ifcfg
 from pyanaconda.modules.network import nm_client
+from pyanaconda.modules.network.kickstart import default_ks_vlan_interface_name
 
 import gi
 gi.require_version("NM", "1.0")
@@ -288,7 +289,7 @@ class DeviceConfigurations(object):
                 if len(parent) == 36:
                     parent = nm_client.get_iface_from_connection(parent)
                 if vlanid is not None and parent:
-                    iface = ifcfg.default_ks_vlan_interface_name(parent, vlanid)
+                    iface = default_ks_vlan_interface_name(parent, vlanid)
         return iface
 
     def add_connection(self, connection):
