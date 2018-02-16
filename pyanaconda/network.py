@@ -1510,7 +1510,8 @@ def networkInitialize(ksdata):
     logIfcfgFiles("network initialization")
 
     log.debug("ensure single initramfs connections")
-    devnames = ensure_single_initramfs_connections()
+    network_proxy = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
+    devnames = network_proxy.ConsolidateInitramfsConnections()
     if devnames:
         msg = "single connection ensured for devices %s" % devnames
         log.debug("%s", msg)
@@ -1539,7 +1540,6 @@ def networkInitialize(ksdata):
         logIfcfgFiles(msg)
 
     # initialize ksdata hostname
-    network_proxy = DBus.get_proxy(MODULE_NETWORK_NAME, MODULE_NETWORK_PATH)
     if network_proxy.Hostname == DEFAULT_HOSTNAME:
         bootopts_hostname = hostname_from_cmdline(flags.cmdline)
         if bootopts_hostname:
