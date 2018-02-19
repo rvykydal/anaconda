@@ -1510,6 +1510,10 @@ def networkInitialize(ksdata):
     if ksdevice:
         network_proxy.SetDefaultKickstartDeviceSpecification(ksdevice)
         log.debug("value for missing network --device set from ksdevice to %s", ksdevice)
+    if "BOOTIF" in flags.cmdline:
+        bootif_mac = flags.cmdline["BOOTIF"][3:].replace("-", ":").upper()
+        network_proxy.SetBootifKickstartDeviceSpecification(bootif_mac)
+        log.debug("value for network --device=bootif set to  %s", bootif_mac)
 
     if not can_touch_runtime_system("networkInitialize", touch_live=True):
         return
