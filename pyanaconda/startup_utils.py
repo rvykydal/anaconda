@@ -435,6 +435,10 @@ def distribute_kickstart_with_boss(kickstart_path):
     if ksdevice:
         network.SetDefaultKickstartDeviceSpecification(ksdevice)
         log.debug("value for missing network --device set from ksdevice to %s", ksdevice)
+    if "BOOTIF" in flags.cmdline:
+        bootif_mac = flags.cmdline["BOOTIF"][3:].replace("-", ":").upper()
+        network.SetBootifKickstartDeviceSpecification(bootif_mac)
+        log.debug("value for network --device=bootif set to  %s", bootif_mac)
 
     errors = boss.DistributeKickstart()
     if errors:
