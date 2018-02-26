@@ -1529,7 +1529,7 @@ def networkInitialize(ksdata):
         log.debug("%s", msg)
         logIfcfgFiles(msg)
     log.debug("apply kickstart")
-    devnames = apply_kickstart(ksdata)
+    devnames = network_proxy.ApplyKickstart()
     if devnames:
         msg = "kickstart pre section applied for devices %s" % devnames
         log.debug("%s", msg)
