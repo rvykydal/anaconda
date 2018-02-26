@@ -20,7 +20,7 @@
 
 from pyanaconda.core.regexes import IBFT_CONFIGURED_DEVICE_NAME
 from pyanaconda.core.signal import Signal
-from pyanaconda.modules.network import ifcfg
+from pyanaconda.modules.network.ifcfg import find_ifcfg_uuid_of_device, find_ifcfg_file
 from pyanaconda.modules.network import nm_client
 
 import gi
@@ -73,9 +73,12 @@ class DeviceConfiguration(object):
         return: ifcfg file path or None if it does not exist
         rtype: str
         """
-        if not self.connection_uuid:
-            return None
-        return ifcfg.find_ifcfg_file([("UUID", self.connection_uuid)])
+        path = ""
+        if self.connection_uuid:
+            ifcfg_file = find_ifcfg_file([("UUID", self.connection_uuid)])
+            if ifcfg_file:
+                path = ifcfg_file.path
+        return path
 
     def get_values(self):
         """Dictionary representation of the configuration.
@@ -93,11 +96,11 @@ class DeviceConfiguration(object):
         """Get kickstart data corresponding to the configuration."""
         if self.device_type == NM.DeviceType.WIFI:
             return None
-        ifcfg_path = self.get_ifcfg_path()
-        if ifcfg_path:
-            ifcfg_file = ifcfg.IfcfgFile(ifcfg_path)
-            ifcfg_file.read()
-            return ifcfg_file.get_kickstart_data(network_data_class)
+        if self.connection_uuid:
+            ifcfg_file = find_ifcfg_file([("UUID", self.connection_uuid)])
+            if ifcfg_file:
+                return ifcfg_file.get_kickstart_data(network_data_class)
+        return None
 
     def __repr__(self):
         return "DeviceConfiguration(device_name={}, connection_uuid={}, device_type={})".format(
@@ -247,7 +250,7 @@ class DeviceConfigurations(object):
             # reconfiguring it via kickstart without activation.
             log.debug("%s has multiple connections: %s", iface, [c.get_uuid() for c in cons])
             hwaddr = device.get_hw_address()
-            ifcfg_uuid = ifcfg.find_ifcfg_uuid_of_device(iface, hwaddr=hwaddr)
+            ifcfg_uuid = find_ifcfg_uuid_of_device(iface, hwaddr=hwaddr)
 
         for c in cons:
             # Ignore slave connections
