@@ -343,3 +343,13 @@ class NetworkModule(KickstartModule):
                                            activate=network_data.activate)
 
         return applied_devices
+
+    def set_onboot_from_kickstart(self):
+        """Update ifcfg ONBOOT values according to kickstart configuration.
+
+        This is needed because when applying kickstart we can't set the autoconnect
+        setting of connection to prevent activating the connection immediately.
+
+        :return: list of devices for which ONBOOT was updated
+        :rtype: list(str)
+        """
