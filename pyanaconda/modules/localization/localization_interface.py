@@ -68,3 +68,15 @@ class LocalizationInterface(KickstartModuleInterface):
         :param language_support: IDs of languages ($LANG) to be supported on system.
         """
         self.implementation.set_language_support(language_support)
+
+    @property
+    def Keyboard(self) -> Str:
+        """The system keyboard type."""
+        return self.implementation.keyboard
+
+    @emits_properties_changed
+    def SetKeyboard(self, keyboard: Str):
+        """Set the system keyboard type.
+
+        :param keyboard: the type of the keyboard
+        """"
