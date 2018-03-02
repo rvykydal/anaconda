@@ -2,3 +2,4 @@
 Name=org.fedoraproject.Anaconda.Modules.Foo
 Exec=/usr/libexec/anaconda/start-module pyanaconda.modules.foo
 User=root
+

@@ -2,3 +2,4 @@
 Name=org.fedoraproject.Anaconda.Addons.Baz
 Exec=/usr/libexec/anaconda/start-module pyanaconda.dbus_addons.baz
 User=root
+

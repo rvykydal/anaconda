@@ -2,3 +2,4 @@
 Name=org.fedoraproject.Anaconda.Modules.Timezone
 Exec=/usr/libexec/anaconda/start-module pyanaconda.modules.timezone
 User=root
+
