@@ -43,7 +43,8 @@ import blivet.arch
 from pyanaconda import nm
 from pyanaconda.flags import flags, can_touch_runtime_system
 from pyanaconda.core.i18n import _
-from pyanaconda.core.regexes import HOSTNAME_PATTERN_WITHOUT_ANCHORS, IBFT_CONFIGURED_DEVICE_NAME
+from pyanaconda.core.regexes import HOSTNAME_PATTERN_WITHOUT_ANCHORS, \
+    IPV6_ADDRESS_IN_DRACUT_IP_OPTION
 from pykickstart.constants import BIND_TO_MAC
 from pyanaconda.modules.common.constants.services import NETWORK, TIMEZONE
 
@@ -1163,13 +1164,17 @@ def ibftIface():
 
 def hostname_from_cmdline(cmdline):
     # legacy hostname= option
-    hostname = flags.cmdline.get('hostname', "")
+    hostname = cmdline.get('hostname', "")
     # ip= option
-    ipopts = flags.cmdline.get('ip')
+    ipopts = cmdline.get('ip')
     # Example (2 options):
     # ens3:dhcp 10.34.102.244::10.34.102.54:255.255.255.0:myhostname:ens9:none
     if ipopts:
         for ipopt in ipopts.split(" "):
+            if ipopt.startswith("["):
+                # Replace ipv6 addresses with empty string, example of ipv6 config:
+                # [fd00:10:100::84:5]::[fd00:10:100::86:49]:80:myhostname:ens9:none
+                ipopt = IPV6_ADDRESS_IN_DRACUT_IP_OPTION.sub('', ipopt)
             try:
                 hostname = ipopt.split(':')[4]
             except IndexError:
