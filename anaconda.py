@@ -285,7 +285,7 @@ if __name__ == "__main__":
     from pyanaconda import startup_utils
 
     # do this early so we can set flags before initializing logging
-    from pyanaconda.flags import flags, can_touch_runtime_system
+    from pyanaconda.flags import flags
     (opts, depr) = parse_arguments(boot_cmdline=flags.cmdline)
 
     from pyanaconda.core.configuration.anaconda import conf
@@ -457,7 +457,7 @@ if __name__ == "__main__":
     # text console with a traceback instead of being left looking at a blank
     # screen. python-meh will replace this excepthook with its own handler
     # once it gets going.
-    if can_touch_runtime_system("early exception handler"):
+    if conf.system.can_switch_tty:
         def _earlyExceptionHandler(ty, value, traceback):
             util.ipmi_report(constants.IPMI_FAILED)
             util.vtActivate(1)
@@ -465,7 +465,7 @@ if __name__ == "__main__":
 
         sys.excepthook = _earlyExceptionHandler
 
-    if can_touch_runtime_system("start audit daemon"):
+    if conf.system.can_audit:
         # auditd will turn into a daemon and exit. Ignore startup errors
         try:
             util.execWithRedirect("/sbin/auditd", [])
@@ -537,7 +537,7 @@ if __name__ == "__main__":
         configured = True
 
     if configured:
-        if can_touch_runtime_system("activate keyboard"):
+        if conf.system.can_localize:
             keyboard.activate_keyboard(localization_proxy)
         else:
             # at least make sure we have all the values
@@ -718,7 +718,7 @@ if __name__ == "__main__":
     from pyanaconda.modules.common.constants.services import TIMEZONE
     timezone_proxy = TIMEZONE.get_proxy()
 
-    if can_touch_runtime_system("initialize time", touch_live=True):
+    if conf.system.can_adjust_time_live:
         threadMgr.add(AnacondaThread(name=constants.THREAD_TIME_INIT,
                                      target=time_initialize,
                                      args=(timezone_proxy,
@@ -763,7 +763,7 @@ if __name__ == "__main__":
         geoloc.geoloc.refresh()
 
     # setup ntp servers and start NTP daemon if not requested otherwise
-    if can_touch_runtime_system("start chronyd"):
+    if conf.system.can_synchronize_time:
         kickstart_ntpservers = timezone_proxy.NTPServers
 
         if kickstart_ntpservers:

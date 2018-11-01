@@ -41,8 +41,9 @@ from blivet.devices import FcoeDiskDevice
 import blivet.arch
 
 from pyanaconda import nm
-from pyanaconda.flags import flags, can_touch_runtime_system
+from pyanaconda.flags import flags
 from pyanaconda.core.i18n import _
+from pyanaconda.core.configuration.anaconda import conf
 from pyanaconda.core.regexes import HOSTNAME_PATTERN_WITHOUT_ANCHORS, IBFT_CONFIGURED_DEVICE_NAME
 from pykickstart.constants import BIND_TO_MAC
 from pyanaconda.modules.common.constants.services import NETWORK, TIMEZONE
@@ -1287,7 +1288,8 @@ def ks_spec_to_device_name(ksspec=""):
 
 # TODO MOD remove, call module when can_touch_runtime_system is resolved
 def set_hostname(hn):
-    if can_touch_runtime_system("set hostname", touch_live=True):
+    # FIXME: Isn't this check redundant?
+    if conf.system.can_change_hostname_live:
         log.info("setting installation environment host name to %s", hn)
         network_proxy = NETWORK.get_proxy()
         network_proxy.SetCurrentHostname(hn)
@@ -1502,7 +1504,7 @@ def apply_kickstart(ksdata):
     return applied_devices
 
 def networkInitialize(ksdata):
-    if not can_touch_runtime_system("networkInitialize", touch_live=True):
+    if not conf.system.can_configure_network:
         return
 
     log.debug("devices found %s", nm.nm_devices())

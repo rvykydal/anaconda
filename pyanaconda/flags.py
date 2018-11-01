@@ -80,31 +80,4 @@ class Flags(object):
         self.__dict__['_in_init'] = False
 
 
-def can_touch_runtime_system(msg, touch_live=False):
-    """
-    Guard that should be used before doing actions that modify runtime system.
-
-    :param msg: message to be logged in case that runtime system cannot be touched
-    :type msg: str
-    :param touch_live: whether to allow touching liveCD installation system
-    :type touch_live: bool
-    :rtype: bool
-
-    """
-
-    if flags.livecdInstall and not touch_live:
-        log.info("Not doing '%s' in live installation", msg)
-        return False
-
-    if flags.imageInstall:
-        log.info("Not doing '%s' in image installation", msg)
-        return False
-
-    if flags.dirInstall:
-        log.info("Not doing '%s' in directory installation", msg)
-        return False
-
-    return True
-
-
 flags = Flags()
