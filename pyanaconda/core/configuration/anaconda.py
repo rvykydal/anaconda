@@ -105,6 +105,111 @@ class InstallationSystem(Section):
         """Are we running in the unknown OS?"""
         return self._type is SystemType.UNKNOWN
 
+    @property
+    def can_reboot(self):
+        """Can we reboot the system?"""
+        return self._is_boot_iso
+
+    @property
+    def can_switch_tty(self):
+        """Can we change the foreground virtual terminal?"""
+        return self._is_boot_iso
+
+    @property
+    def can_audit(self):
+        """Can we run the audit daemon?"""
+        return self._is_boot_iso
+
+    @property
+    def can_adjust_time(self):
+        """Can we change the time?"""
+        return self._is_boot_iso
+
+    @property
+    def can_adjust_time_live(self):
+        """Can we change the time?
+
+        FIXME: Conflict with can_adjust_time.
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def can_synchronize_time(self):
+        """Can we run the NTP daemon?"""
+        return self._is_boot_iso
+
+    @property
+    def can_localize(self):
+        """Can we change the localization?"""
+        return self._is_boot_iso
+
+    @property
+    def can_localize_live(self):
+        """Can we change the localization?
+
+        FIXME: Conflict with can_localize.
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def can_configure_syslog(self):
+        """Can we modify syslog?
+
+        FIXME: This rule is weird.
+        """
+        return self._is_boot_iso
+
+    @property
+    def can_modify_nvram(self):
+        """Can we modify firmware NVRAM variables?
+
+        FIXME: Isn't this target specific?
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def can_copy_resolve_conf(self):
+        """Can we copy /etc/resolv.conf to the target system?
+
+        FIXME: Isn't this rule too specific?
+        """
+        return self._is_boot_iso
+
+    @property
+    def can_change_hostname(self):
+        """Can we change the hostname?"""
+        return self._is_boot_iso
+
+    @property
+    def can_change_hostname_live(self):
+        """Can we change the hostname?
+
+        FIXME: Conflict with can_change_hostname.
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def can_configure_network(self):
+        """Can we configure the network?"""
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def requires_network_connection(self):
+        """Does the system requires the network connection?
+
+        FIXME: This rule is very weird. What does it mean?
+        """
+        return self._is_boot_iso
+
+    @property
+    def provides_user_interaction_config(self):
+        """Can we read /etc/sysconfig/anaconda?
+
+        FIXME: Is the name of this rule correct?
+        FIXME: Isn't this target specific?
+        """
+        return self._is_boot_iso or self._is_live_os
+
 
 class ServicesSection(Section):
     """The Services section."""
