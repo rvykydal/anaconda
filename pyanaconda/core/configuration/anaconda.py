@@ -19,6 +19,7 @@
 #
 import os
 from abc import ABC
+from enum import Enum
 
 from pyanaconda.core.constants import ANACONDA_CONFIG_TMP, ANACONDA_CONFIG_DIR
 from pyanaconda.core.configuration.base import create_parser, read_config, write_config, \
@@ -69,6 +70,40 @@ class AnacondaSection(Section):
     def kickstart_modules(self):
         """List of enabled kickstart modules."""
         return self._get_option("kickstart_modules").split()
+
+
+class SystemType(Enum):
+    """The type of the installation system."""
+    BOOT_ISO = "BOOT_ISO"
+    LIVE_OS = "LIVE_OS"
+    UNKNOWN = "UNKNOWN"
+
+
+class InstallationSystem(Section):
+    """The Installation System section."""
+
+    @property
+    def _type(self):
+        """Type of the installation system.
+
+        FIXME: This is a temporary solution.
+        """
+        return self._get_option("type", SystemType)
+
+    @property
+    def _is_boot_iso(self):
+        """Are we running in the boot.iso?"""
+        return self._type is SystemType.BOOT_ISO
+
+    @property
+    def _is_live_os(self):
+        """Are we running in the live OS?"""
+        return self._type is SystemType.LIVE_OS
+
+    @property
+    def _is_unknown(self):
+        """Are we running in the unknown OS?"""
+        return self._type is SystemType.UNKNOWN
 
 
 class ServicesSection(Section):
@@ -158,6 +193,7 @@ class AnacondaConfiguration(object):
         self._parser = create_parser()
 
         self._anaconda = AnacondaSection("Anaconda", self.get_parser())
+        self._system = InstallationSystem("Installation System", self.get_parser())
         self._storage = StorageSection("Storage", self.get_parser())
         self._services = ServicesSection("Services", self.get_parser())
 
@@ -165,6 +201,11 @@ class AnacondaConfiguration(object):
     def anaconda(self):
         """The Anaconda section."""
         return self._anaconda
+
+    @property
+    def system(self):
+        """The Installation System section."""
+        return self._system
 
     @property
     def storage(self):
@@ -246,6 +287,14 @@ class AnacondaConfiguration(object):
         self.storage._set_option("ibft", opts.ibft)
         self.storage._set_option("gpt", opts.gpt)
         self.storage._set_option("multipath_friendly_names", opts.multipath_friendly_names)
+
+        # Set the type of the installation system.
+        if opts.liveinst:
+            self.system._set_option("type", SystemType.LIVE_OS.value)
+        elif opts.images or opts.dirinstall:
+            self.system._set_option("type", SystemType.UNKNOWN.value)
+        else:
+            self.system._set_option("type", SystemType.BOOT_ISO.value)
 
         self.validate()
 
