@@ -23,6 +23,7 @@ gi.require_version("Gdk", "3.0")
 
 from gi.repository import Pango, Gdk
 
+from pyanaconda.core.configuration.anaconda import conf
 from pyanaconda.modules.common.constants.services import LOCALIZATION
 from pyanaconda.flags import flags
 from pyanaconda.core.i18n import CN_
@@ -129,7 +130,8 @@ class LangsupportSpoke(LangLocaleHandler, NormalSpoke):
     @property
     def showable(self):
         # don't show the language support spoke on live media and in single language mode
-        return not flags.livecdInstall and not flags.singlelang
+        # FIXME: Why this spoke is not disabled in the user configuration file?
+        return not conf.system._is_live_os and not flags.singlelang
 
     @property
     def status(self):

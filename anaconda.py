@@ -96,8 +96,7 @@ def exitHandler(rebootData, storage):
 
     anaconda.dbus_launcher.stop()
 
-    if not flags.imageInstall and not flags.livecdInstall \
-       and not flags.dirInstall:
+    if not flags.imageInstall and not flags.dirInstall and conf.system.can_reboot:
         from pykickstart.constants import KS_SHUTDOWN, KS_WAIT
 
         if flags.eject or rebootData.eject:
@@ -449,8 +448,6 @@ if __name__ == "__main__":
 
     if opts.liveinst:
         startup_utils.live_startup(anaconda)
-    elif "LIVECMD" in os.environ:
-        log.warning("Running via liveinst, but not setting flags.livecdInstall - this is for testing only")
 
     # Switch to tty1 on exception in case something goes wrong during X start.
     # This way if, for example, metacity doesn't start, we switch back to a

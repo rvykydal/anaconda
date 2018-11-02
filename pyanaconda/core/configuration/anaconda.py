@@ -168,6 +168,15 @@ class InstallationSystem(Section):
         return self._is_boot_iso or self._is_live_os
 
     @property
+    def can_disable_swap(self):
+        """Can we call swapoff?
+
+        FIXME: This should be safe to do on the boot.iso.
+        FIXME: This rule seems to be too specific.
+        """
+        return self._is_live_os
+
+    @property
     def can_copy_resolve_conf(self):
         """Can we copy /etc/resolv.conf to the target system?
 
@@ -209,6 +218,11 @@ class InstallationSystem(Section):
         FIXME: Isn't this target specific?
         """
         return self._is_boot_iso or self._is_live_os
+
+    @property
+    def provides_web_browser(self):
+        """Can we redirect users to web pages?"""
+        return self._is_live_os
 
 
 class ServicesSection(Section):

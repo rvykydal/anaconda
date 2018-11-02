@@ -141,12 +141,10 @@ class Anaconda(object):
             klass = self.instClass.getBackend()
 
             if not klass:
-                from pyanaconda.flags import flags
-
                 if self.ksdata.ostreesetup.seen:
                     from pyanaconda.payload.rpmostreepayload import RPMOSTreePayload
                     klass = RPMOSTreePayload
-                elif flags.livecdInstall:
+                elif self.opts.liveinst:
                     from pyanaconda.payload.livepayload import LiveImagePayload
                     klass = LiveImagePayload
                 elif self.ksdata.method.method == "liveimg":
