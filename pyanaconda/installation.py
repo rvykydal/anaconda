@@ -104,10 +104,11 @@ def doConfiguration(storage, payload, ksdata, instClass):
 
     # schedule network configuration (if required)
     will_write_network = not flags.flags.imageInstall and not flags.flags.dirInstall
+
     if will_write_network:
         network_config = TaskQueue("Network configuration", N_("Writing network configuration"))
         network_config.append(Task("Network configuration",
-                                   ksdata.network.execute, (storage, ksdata, instClass)))
+                                   ksdata.network.execute, (storage, payload, ksdata, instClass)))
         configuration_queue.append(network_config)
 
     # creating users and groups requires some pre-configuration.
