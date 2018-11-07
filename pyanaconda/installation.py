@@ -21,12 +21,14 @@
 from blivet import callbacks
 from blivet.devices import BTRFSDevice
 
+from pyanaconda.core.configuration.anaconda import conf
 from pyanaconda.core.constants import BOOTLOADER_DISABLED
 from pyanaconda.modules.common.constants.objects import BOOTLOADER, AUTO_PARTITIONING, \
     MANUAL_PARTITIONING
 from pyanaconda.modules.common.constants.services import STORAGE
 from pyanaconda.storage.osinstall import turn_on_filesystems
 from pyanaconda.bootloader import writeBootLoader
+from pyanaconda.payload.livepayload import LiveImagePayload
 from pyanaconda.progress import progress_message, progress_step, progress_complete, progress_init
 from pyanaconda.users import Users
 from pyanaconda import flags
@@ -103,10 +105,11 @@ def doConfiguration(storage, payload, ksdata, instClass):
 
     # schedule network configuration (if required)
     will_write_network = not flags.flags.imageInstall and not flags.flags.dirInstall
+
     if will_write_network:
         network_config = TaskQueue("Network configuration", N_("Writing network configuration"))
         network_config.append(Task("Network configuration",
-                                   ksdata.network.execute, (storage, ksdata, instClass)))
+                                   ksdata.network.execute, (storage, payload, ksdata, instClass)))
         configuration_queue.append(network_config)
 
     # creating users and groups requires some pre-configuration.
@@ -135,7 +138,7 @@ def doConfiguration(storage, payload, ksdata, instClass):
     bootloader_proxy = STORAGE.get_proxy(BOOTLOADER)
     bootloader_enabled = bootloader_proxy.BootloaderMode != BOOTLOADER_DISABLED
 
-    if flags.flags.livecdInstall and boot_on_btrfs and bootloader_enabled:
+    if isinstance(payload, LiveImagePayload) and boot_on_btrfs and bootloader_enabled:
         generate_initramfs.append(Task("Write BTRFS bootloader fix", writeBootLoader, (storage, payload, instClass, ksdata)))
     configuration_queue.append(generate_initramfs)
 
@@ -240,7 +243,7 @@ def doInstall(storage, payload, ksdata, instClass):
 
     # Save system time to HW clock.
     # - this used to be before waiting on threads, but I don't think that's needed
-    if flags.can_touch_runtime_system("save system time to HW clock"):
+    if conf.system.can_adjust_time:
         # lets just do this as a top-level task - no
 
         save_hwclock = Task("Save system time to HW clock", timezone.save_hw_clock)
@@ -305,7 +308,7 @@ def doInstall(storage, payload, ksdata, instClass):
     pre_install.append(Task("Setup timezone", ksdata.timezone.setup, (ksdata,)))
 
     # make name resolution work for rpm scripts in chroot
-    if flags.can_touch_runtime_system("copy /etc/resolv.conf to sysroot"):
+    if conf.system.can_copy_resolve_conf:
         # we use a custom Task subclass as the sysroot path has to be resolved
         # only when the task is actually started, not at task creation time
         pre_install.append(WriteResolvConfTask("Copy /resolv.conf to sysroot"))

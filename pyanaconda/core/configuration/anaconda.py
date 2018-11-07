@@ -19,6 +19,7 @@
 #
 import os
 from abc import ABC
+from enum import Enum
 
 from pyanaconda.core.constants import ANACONDA_CONFIG_TMP, ANACONDA_CONFIG_DIR
 from pyanaconda.core.configuration.base import create_parser, read_config, write_config, \
@@ -69,6 +70,159 @@ class AnacondaSection(Section):
     def kickstart_modules(self):
         """List of enabled kickstart modules."""
         return self._get_option("kickstart_modules").split()
+
+
+class SystemType(Enum):
+    """The type of the installation system."""
+    BOOT_ISO = "BOOT_ISO"
+    LIVE_OS = "LIVE_OS"
+    UNKNOWN = "UNKNOWN"
+
+
+class InstallationSystem(Section):
+    """The Installation System section."""
+
+    @property
+    def _type(self):
+        """Type of the installation system.
+
+        FIXME: This is a temporary solution.
+        """
+        return self._get_option("type", SystemType)
+
+    @property
+    def _is_boot_iso(self):
+        """Are we running in the boot.iso?"""
+        return self._type is SystemType.BOOT_ISO
+
+    @property
+    def _is_live_os(self):
+        """Are we running in the live OS?"""
+        return self._type is SystemType.LIVE_OS
+
+    @property
+    def _is_unknown(self):
+        """Are we running in the unknown OS?"""
+        return self._type is SystemType.UNKNOWN
+
+    @property
+    def can_reboot(self):
+        """Can we reboot the system?"""
+        return self._is_boot_iso
+
+    @property
+    def can_switch_tty(self):
+        """Can we change the foreground virtual terminal?"""
+        return self._is_boot_iso
+
+    @property
+    def can_audit(self):
+        """Can we run the audit daemon?"""
+        return self._is_boot_iso
+
+    @property
+    def can_adjust_time(self):
+        """Can we change the time?"""
+        return self._is_boot_iso
+
+    @property
+    def can_adjust_time_live(self):
+        """Can we change the time?
+
+        FIXME: Conflict with can_adjust_time.
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def can_synchronize_time(self):
+        """Can we run the NTP daemon?"""
+        return self._is_boot_iso
+
+    @property
+    def can_localize(self):
+        """Can we change the localization?"""
+        return self._is_boot_iso
+
+    @property
+    def can_localize_live(self):
+        """Can we change the localization?
+
+        FIXME: Conflict with can_localize.
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def can_configure_syslog(self):
+        """Can we modify syslog?
+
+        FIXME: This rule is weird.
+        """
+        return self._is_boot_iso
+
+    @property
+    def can_modify_nvram(self):
+        """Can we modify firmware NVRAM variables?
+
+        FIXME: Isn't this target specific?
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def can_disable_swap(self):
+        """Can we call swapoff?
+
+        FIXME: This should be safe to do on the boot.iso.
+        FIXME: This rule seems to be too specific.
+        """
+        return self._is_live_os
+
+    @property
+    def can_copy_resolve_conf(self):
+        """Can we copy /etc/resolv.conf to the target system?
+
+        FIXME: Isn't this rule too specific?
+        """
+        return self._is_boot_iso
+
+    @property
+    def can_change_hostname(self):
+        """Can we change the hostname?"""
+        return self._is_boot_iso
+
+    @property
+    def can_change_hostname_live(self):
+        """Can we change the hostname?
+
+        FIXME: Conflict with can_change_hostname.
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def can_configure_network(self):
+        """Can we configure the network?"""
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def requires_network_connection(self):
+        """Does the system requires the network connection?
+
+        FIXME: This rule is very weird. What does it mean?
+        """
+        return self._is_boot_iso
+
+    @property
+    def provides_user_interaction_config(self):
+        """Can we read /etc/sysconfig/anaconda?
+
+        FIXME: Is the name of this rule correct?
+        FIXME: Isn't this target specific?
+        """
+        return self._is_boot_iso or self._is_live_os
+
+    @property
+    def provides_web_browser(self):
+        """Can we redirect users to web pages?"""
+        return self._is_live_os
 
 
 class ServicesSection(Section):
@@ -158,6 +312,7 @@ class AnacondaConfiguration(object):
         self._parser = create_parser()
 
         self._anaconda = AnacondaSection("Anaconda", self.get_parser())
+        self._system = InstallationSystem("Installation System", self.get_parser())
         self._storage = StorageSection("Storage", self.get_parser())
         self._services = ServicesSection("Services", self.get_parser())
 
@@ -165,6 +320,11 @@ class AnacondaConfiguration(object):
     def anaconda(self):
         """The Anaconda section."""
         return self._anaconda
+
+    @property
+    def system(self):
+        """The Installation System section."""
+        return self._system
 
     @property
     def storage(self):
@@ -246,6 +406,14 @@ class AnacondaConfiguration(object):
         self.storage._set_option("ibft", opts.ibft)
         self.storage._set_option("gpt", opts.gpt)
         self.storage._set_option("multipath_friendly_names", opts.multipath_friendly_names)
+
+        # Set the type of the installation system.
+        if opts.liveinst:
+            self.system._set_option("type", SystemType.LIVE_OS.value)
+        elif opts.images or opts.dirinstall:
+            self.system._set_option("type", SystemType.UNKNOWN.value)
+        else:
+            self.system._set_option("type", SystemType.BOOT_ISO.value)
 
         self.validate()
 
