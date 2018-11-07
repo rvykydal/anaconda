@@ -1583,7 +1583,7 @@ class NetworkSpoke(FirstbootSpokeMixIn, NormalSpoke):
     @property
     def completed(self):
         # TODO: check also if source requires updates when implemented
-        return (not conf.system.requires_network_connection
+        return (not conf.system.can_require_network_connection
                 or nm.nm_activated_devices())
 
     @property
@@ -1726,7 +1726,7 @@ class NetworkStandaloneSpoke(StandaloneSpoke):
 
     @property
     def completed(self):
-        return (not conf.system.requires_network_connection
+        return (not conf.system.can_require_network_connection
                 or nm.nm_activated_devices()
                 or self.data.method.method not in ("url", "nfs"))
 

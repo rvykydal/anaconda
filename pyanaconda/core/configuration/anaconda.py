@@ -203,11 +203,8 @@ class InstallationSystem(Section):
         return self._is_boot_iso
 
     @property
-    def requires_network_connection(self):
-        """Does the system requires the network connection?
-
-        FIXME: This rule is very weird. What does it mean?
-        """
+    def can_require_network_connection(self):
+        """Can the system require network connection?"""
         return self._is_boot_iso
 
     @property

@@ -103,7 +103,7 @@ class NetworkSpoke(FirstbootSpokeMixIn, NormalTUISpoke):
             check if we're installing from CD/DVD, since a network connection
             should not be required in this case.
         """
-        return (not conf.system.requires_network_connection
+        return (not conf.system.can_require_network_connection
                 or nm.nm_activated_devices())
 
     @property
