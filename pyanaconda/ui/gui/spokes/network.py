@@ -1507,7 +1507,7 @@ class SecretAgent(dbus.service.Object):
 
 def register_secret_agent(spoke):
 
-    if not conf.system.requires_network_connection:
+    if not conf.system.can_configure_network:
         return False
 
     global secret_agent
@@ -1602,12 +1602,12 @@ class NetworkSpoke(FirstbootSpokeMixIn, NormalSpoke):
         NormalSpoke.initialize(self)
         self.initialize_start()
         self.network_control_box.initialize()
-        if not conf.system.requires_network_connection:
-            self.builder.get_object("network_config_vbox").set_no_show_all(True)
-            self.builder.get_object("network_config_vbox").hide()
-        else:
+        if not conf.system.can_configure_network:
             self.builder.get_object("live_hint_label").set_no_show_all(True)
             self.builder.get_object("live_hint_label").hide()
+        else:
+            self.builder.get_object("network_config_vbox").set_no_show_all(True)
+            self.builder.get_object("network_config_vbox").hide()
 
         if not self._network_module.proxy.Kickstarted:
             _update_network_data(self.data, self.network_control_box)
