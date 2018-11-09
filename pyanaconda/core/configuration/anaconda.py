@@ -221,6 +221,10 @@ class InstallationSystem(Section):
         """Can we redirect users to web pages?"""
         return self._is_live_os
 
+    @property
+    def can_write_network_config(self):
+        """Should we pass network config to installed system?"""
+        return self._is_boot_iso or self._is_live_os
 
 class ServicesSection(Section):
     """The Services section."""

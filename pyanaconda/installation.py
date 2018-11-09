@@ -103,10 +103,8 @@ def doConfiguration(storage, payload, ksdata, instClass):
     os_config.append(Task("Configure X", ksdata.xconfig.execute, (storage, ksdata, instClass)))
     configuration_queue.append(os_config)
 
-    # schedule network configuration (if required)
-    will_write_network = not flags.flags.imageInstall and not flags.flags.dirInstall
-
-    if will_write_network:
+    # schedule network configuration (if expected)
+    if conf.system.can_write_network_config:
         network_config = TaskQueue("Network configuration", N_("Writing network configuration"))
         network_config.append(Task("Network configuration",
                                    ksdata.network.execute, (storage, payload, ksdata, instClass)))
