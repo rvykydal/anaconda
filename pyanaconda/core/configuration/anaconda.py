@@ -226,6 +226,11 @@ class InstallationSystem(Section):
         """Should we pass network config to installed system?"""
         return self._is_boot_iso or self._is_live_os
 
+    @property
+    def can_detect_unsupported_hardware(self):
+        """Should we detect unsupported system hardware?"""
+        return self._is_boot_iso or self._is_live_os
+
 class ServicesSection(Section):
     """The Services section."""
 

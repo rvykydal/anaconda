@@ -43,6 +43,7 @@ from requests_file import FileAdapter
 from requests_ftp import FTPAdapter
 
 from pyanaconda.flags import flags
+from pyanaconda.core.configuration.anaconda import conf
 from pyanaconda.core.process_watchers import WatchProcesses
 from pyanaconda.core.constants import DRACUT_SHUTDOWN_EJECT, TRANSLATIONS_UPDATE_DIR, \
     IPMI_ABORTED, X_TIMEOUT, TAINT_HARDWARE_UNSUPPORTED, TAINT_SUPPORT_REMOVED, \
@@ -984,7 +985,7 @@ def detect_unsupported_hardware(install_class):
     """
     warnings = []
 
-    if flags.automatedInstall or flags.dirInstall or flags.imageInstall:
+    if flags.automatedInstall or not conf.system.can_detect_unsupported_hardware:
         log.info("Skipping detection of unsupported hardware.")
         return []
 
