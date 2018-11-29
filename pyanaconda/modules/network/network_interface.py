@@ -34,6 +34,7 @@ class NetworkInterface(KickstartModuleInterface):
         self.implementation.hostname_changed.connect(self.changed("Hostname"))
         self.implementation.current_hostname_changed.connect(self.CurrentHostnameChanged)
         self.implementation.connected_changed.connect(self.changed("Connected"))
+        self.implementation.disable_ipv6_changed.connect(self.changed("DisableIPv6"))
 
     @property
     def Hostname(self) -> Str:
@@ -89,3 +90,28 @@ class NetworkInterface(KickstartModuleInterface):
         To be removed after reworking the synchronization.
         """
         return self.implementation.is_connecting()
+
+    @property
+    def DisableIPv6(self) -> Bool:
+        """Disable IPv6 on target system."""
+        return self.implementation.disable_ipv6
+
+    @emits_properties_changed
+    def SetDisableIPv6(self, disable: Bool):
+        """Set disable IPv6 on target system.
+
+        Disables IPv6 on target system if all the network devices have IPv6
+        configuration set to Ignore (kickstart option --noipv6).
+
+        param disable: True if IPv6 on target system should be disabled
+        """
+        self.implementation.set_disable_ipv6(disable)
+
+    def InstallNetworkWithTask(self, sysroot: Str, fcoe_ifaces: List[Str]) -> ObjPath:
+        """Install network with an installation task.
+
+        :param sysroot: a path to the root of the installed system
+        :param fcoe_ifaces: list of network interfaces used by FCoE
+        :return: a DBus path of an installation task
+        """
+        return self.implementation.install_network_with_task(sysroot, fcoe_ifaces)

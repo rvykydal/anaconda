@@ -1416,6 +1416,12 @@ class Network(COMMANDS.Network):
             self.packages = ["teamd"]
 
     def execute(self, storage, payload, ksdata, instClass):
+        fcoe_ifaces = network.devices_used_by_fcoe(storage)
+        network_proxy = NETWORK.get_proxy()
+        task_path = network_proxy.InstallNetworkWithTask(util.getSysroot(), fcoe_ifaces)
+        task_proxy = NETWORK.get_proxy(task_path)
+        sync_run_task(task_proxy)
+
         network.write_network_config(storage, payload, ksdata, instClass, util.getSysroot())
 
 class Nvdimm(COMMANDS.Nvdimm):

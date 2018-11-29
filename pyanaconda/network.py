@@ -1357,6 +1357,11 @@ def usedByFCoE(iface, storage):
             return True
     return False
 
+def devices_used_by_fcoe(storage):
+    fcoe_nics = {d.nic for d in storage.devices if isinstance(d, FcoeDiskDevice)}
+    fcoe_devices = [device for device in nm.nm_devices() if device in fcoe_nics]
+    return fcoe_devices
+
 def write_sysconfig_network(rootpath, overwrite=False):
 
     cfgfile = os.path.normpath(rootpath + networkConfFile)

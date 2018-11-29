@@ -25,6 +25,7 @@ from pyanaconda.modules.common.constants.services import NETWORK, HOSTNAME
 from pyanaconda.modules.network.network_interface import NetworkInterface
 from pyanaconda.modules.network.kickstart import NetworkKickstartSpecification
 from pyanaconda.modules.network.firewall import FirewallModule
+from pyanaconda.modules.network.installation import NetworkInstallationTask
 
 import gi
 gi.require_version("NM", "1.0")
@@ -44,6 +45,9 @@ class NetworkModule(KickstartModule):
 
         self.hostname_changed = Signal()
         self._hostname = "localhost.localdomain"
+
+        self.disable_ipv6_changed = Signal()
+        self._disable_ipv6 = False
 
         self.current_hostname_changed = Signal()
         self._hostname_service_proxy = None
@@ -164,3 +168,31 @@ class NetworkModule(KickstartModule):
         state = self.nm_client.get_state()
         log.debug("NeworkManager state changed to %s", state)
         self.set_connected(self._nm_state_connected(state))
+
+    @property
+    def disable_ipv6(self):
+        """Disable IPv6 on target system."""
+        return self._disable_ipv6
+
+    def set_disable_ipv6(self, disable_ipv6):
+        """Set disable IPv6 on target system."""
+        self._disable_ipv6 = disable_ipv6
+        self.disable_ipv6_changed.emit()
+        log.debug("Disable IPv6 is set to %s", disable_ipv6)
+
+    def install_network_with_task(self, sysroot, fcoe_ifaces):
+        """Install network with an installation task.
+
+        :param sysroot: a path to the root of the installed system
+        :param fcoe_ifaces: list of network interfaces used by FCoE
+        :return: a DBus path of an installation task
+        """
+
+        disable_ipv6 = False
+        if self.disable_ipv6:
+
+
+        task = NetworkInstallationTask(sysroot, self.hostname, disable_ipv6, overwrite,
+                                       onboot_yes_ifcfg_files, network_devices)
+        path = self.publish_task(NETWORK.namespace, task)
+        return path
