@@ -44,6 +44,11 @@ supported_device_types = [
     NM.DeviceType.TEAM,
 ]
 
+supported_wired_device_types = [
+    NM.DeviceType.ETHERNET,
+    NM.DeviceType.INFINIBAND,
+]
+
 # TODO tests
 # TODO not real devices and virtual dev connections?
 # TODO handle slaves
