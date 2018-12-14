@@ -31,9 +31,11 @@ from pyanaconda.modules.network.device_configuration import DeviceConfigurations
     supported_wired_device_types
 from pyanaconda.modules.network.nm_client import nm_client, get_device_name_from_network_data, \
     add_connection_from_ksdata, update_connection_from_ksdata, ensure_active_connection_for_device, \
-    update_iface_setting_values, bound_hwaddr_of_device
+    update_iface_setting_values, bound_hwaddr_of_device, devices_ignore_ipv6
 from pyanaconda.modules.network.ifcfg import get_ifcfg_file_of_device, update_onboot_value, \
     update_slaves_onboot_value
+from pyanaconda.modules.network.installation import NetworkInstallationTask
+from pyanaconda.modules.network.utils import get_default_route_iface
 
 import gi
 gi.require_version("NM", "1.0")
@@ -42,6 +44,14 @@ from gi.repository import NM
 from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
 
+
+from enum import Enum
+# TODO import from pyanaconda.configuration when available
+class NetworkOnBoot(Enum):
+    """Network device to be activated on boot if none was configured so."""
+    NONE = "NONE"
+    DEFAULT_ROUTE_DEVICE = "DEFAULT_ROUTE_DEVICE"
+    FIRST_WIRED_WITH_LINK = "FIRST_WIRED_WITH_LINK"
 
 # TODO abstract out NetworkManager/client
 
@@ -55,6 +65,9 @@ class NetworkModule(KickstartModule):
 
         self.hostname_changed = Signal()
         self._hostname = "localhost.localdomain"
+
+        self.disable_ipv6_changed = Signal()
+        self._disable_ipv6 = False
 
         self.current_hostname_changed = Signal()
         self._hostname_service_proxy = None
@@ -76,6 +89,7 @@ class NetworkModule(KickstartModule):
                 log.debug("NetworkManager is not running.")
 
         self._original_network_data = []
+        self._onboot_yes_ifaces = []
         self._device_configurations = None
         self.configuration_changed = Signal()
 
@@ -129,13 +143,17 @@ class NetworkModule(KickstartModule):
         """Return the kickstart string."""
 
         data = self.get_kickstart_handler()
+
         if self._device_configurations:
             device_data = self._device_configurations.get_kickstart_data(data.NetworkData)
             log.debug("using device configurations to generate kickstart")
         else:
             device_data = self._original_network_data
             log.debug("using original kickstart data to generate kickstart")
+
         data.network.network = device_data
+
+        self._update_network_data_with_onboot(data.network.network, self._onboot_yes_ifaces)
 
         hostname_data = data.NetworkData(hostname=self.hostname, bootProto="")
         update_network_hostname_data(data.network.network, hostname_data)
@@ -217,6 +235,86 @@ class NetworkModule(KickstartModule):
         state = self.nm_client.get_state()
         log.debug("NeworkManager state changed to %s", state)
         self.set_connected(self._nm_state_connected(state))
+
+    @property
+    def disable_ipv6(self):
+        """Disable IPv6 on target system."""
+        return self._disable_ipv6
+
+    def set_disable_ipv6(self, disable_ipv6):
+        """Set disable IPv6 on target system."""
+        self._disable_ipv6 = disable_ipv6
+        self.disable_ipv6_changed.emit()
+        log.debug("Disable IPv6 is set to %s", disable_ipv6)
+
+    def install_network_with_task(self, sysroot, onboot_ifaces, overwrite):
+        """Install network with an installation task.
+
+        :param sysroot: a path to the root of the installed system
+        :param onboot_ifaces: list of network interfaces which should have ONBOOT=yes
+        :param overwrite: overwrite existing configuration
+        :return: a DBus path of an installation task
+        """
+
+        disable_ipv6 = self.disable_ipv6 and devices_ignore_ipv6(supported_wired_device_types)
+        network_ifaces = [device.get_iface() for device in self.nm_client.get_devices()]
+
+        # TODO read from configuration when available
+        onboot_policy = NetworkOnBoot.DEFAULT_ROUTE_DEVICE
+        onboot_ifaces_by_policy = self._get_onboot_ifaces_by_policy(onboot_policy)
+        all_onboot_ifaces = list(set(onboot_ifaces + onboot_ifaces_by_policy))
+        self._onboot_yes_ifaces = all_onboot_ifaces
+
+        log.debug("Setting ONBOOT to yes for %s (fcoe) %s (policy)",
+                  onboot_ifaces, onboot_ifaces_by_policy)
+        task = NetworkInstallationTask(sysroot, self.hostname, disable_ipv6, overwrite,
+                                       all_onboot_ifaces, network_ifaces)
+        path = self.publish_task(NETWORK.namespace, task)
+        return path
+
+    def _get_onboot_ifaces_by_policy(self, policy):
+
+        if self._device_configurations:
+            data = self.get_kickstart_handler()
+            device_data = self._device_configurations.get_kickstart_data(data.NetworkData)
+        else:
+            device_data = self._original_network_data
+
+        ifaces = []
+        if any(dd.onboot for dd in device_data if dd.device):
+            return ifaces
+
+        if policy is NetworkOnBoot.FIRST_WIRED_WITH_LINK:
+            # choose first device having link
+            log.info("Onboot policy: choosing the first device having link.")
+            for device in nm_client.get_devices():
+                if device.get_device_type() not in supported_device_types:
+                    continue
+                if device.get_device_type() == NM.DeviceType.WIFI:
+                    continue
+                if device.get_carrier():
+                    ifaces.append(device.get_iface())
+                    break
+
+        elif policy is NetworkOnBoot.DEFAULT_ROUTE_DEVICE:
+            # choose the device used during installation
+            # (ie for majority of cases the one having the default route)
+            log.info("Onboot policy: choosing the default route device.")
+            iface = get_default_route_iface() or get_default_route_iface(family="inet6")
+            if iface:
+                device = self.nm_client.get_device_by_iface(iface)
+                if device.get_device_type() != NM.DeviceType.WIFI:
+                    ifaces.append(iface)
+
+        return ifaces
+
+    def _update_network_data_with_onboot(self, network_data, ifaces):
+        for nd in network_data:
+            supported_devices = self.get_supported_devices()
+            device_name = get_device_name_from_network_data(nd, supported_devices, self._bootif)
+            if device_name in ifaces:
+                log.debug("Updating network data onboot value: %s -> %s", nd.onboot, True)
+                nd.onboot = True
 
     def create_device_configurations(self):
         # TODO use get_all_devices?, virtual configs? test this
