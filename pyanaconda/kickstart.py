@@ -1398,8 +1398,19 @@ class Network(COMMANDS.Network):
         self.packages = []
 
     def __str__(self):
+        # Anaconda kickstart is still used as data holder by TUI so we keep it
+        # in parallel with module kickstart.
+        # It is updated by GUI and TUI from ifcfg files changed by UI (via NM for GUI).
+        # It is not updated with ONBOOT changes from the end of installation.
+        anaconda_ks = super().__str__()
+        # Module kickstart is generated from ifcfg files (or original ks updated
+        # for hostname is used if no UI configuration happened).
+        # Ifcfg files are modified by GUI and TUI - ifcfg files are the SPOT for
+        # anaconda and module kickstart.
+        # It is updated with ONBOOT changes from the end of installation.
         network_proxy = NETWORK.get_proxy()
-        return network_proxy.GenerateKickstart()
+        module_ks = network_proxy.GenerateKickstart()
+        return "#Anaconda debug kickstart:\n#" + anaconda_ks.replace("\n", "\n#").strip("#") + module_ks
 
     def parse(self, args):
         nd = super().parse(args)

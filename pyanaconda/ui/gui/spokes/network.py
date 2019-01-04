@@ -1562,7 +1562,7 @@ class NetworkSpoke(FirstbootSpokeMixIn, NormalSpoke):
         # and we want to generate kickstart from device configurations
         # (persistent NM / ifcfg configuration), instead of using original kickstart.
         self._network_module.proxy.NetworkDeviceConfigurationChanged()
-        self._network_module.proxy.SetHostname(self.network_control_box.hostname)
+        _update_network_data(self.data, self.network_control_box)
         log.debug("apply ksdata %s", self.data.network)
 
         # if installation media or hdd aren't used and settings have changed
@@ -1715,7 +1715,7 @@ class NetworkStandaloneSpoke(StandaloneSpoke):
         # and we want to generate kickstart from device configurations
         # (persistent NM / ifcfg configuration), instead of using original kickstart.
         self._network_module.proxy.NetworkDeviceConfigurationChanged()
-        self._network_module.proxy.SetHostname(self.network_control_box.hostname)
+        _update_network_data(self.data, self.network_control_box)
 
         log.debug("apply ksdata %s", self.data.network)
 
@@ -1781,6 +1781,28 @@ class NetworkStandaloneSpoke(StandaloneSpoke):
 
     def _update_hostname(self):
         self.network_control_box.current_hostname = self._network_module.proxy.GetCurrentHostname()
+
+# FIXME: We need to update only hostname here, device configruation module data
+# are updated by module from device configurations when needed. local ksdata are updated
+# here just for testing issues at the moment.
+def _update_network_data(data, ncb):
+    data.network.network = []
+    for i, dev_cfg in enumerate(ncb.dev_cfgs):
+        devname = dev_cfg.get_iface()
+        nd = network.ksdata_from_ifcfg(devname, dev_cfg.get_uuid())
+        if not nd:
+            continue
+        if devname in nm.nm_activated_devices():
+            nd.activate = True
+        else:
+            # First network command defaults to --activate so we must
+            # use --no-activate explicitly to prevent the default
+            if i == 0:
+                nd.activate = False
+
+        data.network.network.append(nd)
+    hostname = ncb.hostname
+    network.update_hostname_data(data, hostname)
 
 
 def test():
