@@ -142,7 +142,7 @@ class NetworkModule(KickstartModule):
         data = self.get_kickstart_handler()
 
         if self._device_configurations and self._use_device_configurations:
-            device_data = self._device_configurations.get_kickstart_data(self.nm_client, data.NetworkData)
+            device_data = self._device_configurations.get_kickstart_data(data.NetworkData)
             log.debug("using device configurations to generate kickstart")
         else:
             device_data = self._original_network_data
@@ -272,7 +272,7 @@ class NetworkModule(KickstartModule):
 
         if self._device_configurations and self._use_device_configurations:
             data = self.get_kickstart_handler()
-            device_data = self._device_configurations.get_kickstart_data(self.nm_client, data.NetworkData)
+            device_data = self._device_configurations.get_kickstart_data(data.NetworkData)
         else:
             device_data = self._original_network_data
 
