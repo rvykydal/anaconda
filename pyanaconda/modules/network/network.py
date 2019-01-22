@@ -281,7 +281,7 @@ class NetworkModule(KickstartModule):
         if policy is NetworkOnBoot.FIRST_WIRED_WITH_LINK:
             # choose first device having link
             log.info("Onboot policy: choosing the first device having link.")
-            for device in nm_client.get_devices():
+            for device in self.nm_client.get_devices():
                 if device.get_device_type() not in supported_device_types:
                     continue
                 if device.get_device_type() == NM.DeviceType.WIFI:
