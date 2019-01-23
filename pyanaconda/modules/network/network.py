@@ -155,10 +155,10 @@ class NetworkModule(KickstartModule):
         hostname_data = data.NetworkData(hostname=self.hostname, bootProto="")
         update_network_hostname_data(data.network.network, hostname_data)
 
-        log.debug("generated kickstart:\n%s", str(data))
-
         # firewall
         self._firewall_module.setup_kickstart(data)
+
+        log.debug("generated kickstart:\n%s", str(data))
 
         return str(data)
 
