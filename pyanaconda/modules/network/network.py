@@ -305,6 +305,8 @@ class NetworkModule(KickstartModule):
         return ifaces
 
     def _update_network_data_with_onboot(self, network_data, ifaces):
+        if not ifaces:
+            return
         for nd in network_data:
             supported_devices = self.get_supported_devices()
             device_name = get_device_name_from_network_data(self.nm_client,
