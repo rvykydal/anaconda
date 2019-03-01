@@ -183,7 +183,7 @@ class NetworkInterface(KickstartModuleInterface):
         """
         return self.implementation.set_real_onboot_values_from_kickstart_with_task()
 
-    def DumpMissingIfcfgFiles(self) -> List[Str]:
+    def DumpMissingIfcfgFilesWithTask(self) -> ObjPath:
         """Dump missing default ifcfg file for wired devices.
 
         Make sure each supported wired device has ifcfg file.
@@ -200,7 +200,7 @@ class NetworkInterface(KickstartModuleInterface):
         The connection id (and consequently ifcfg file name) is set to device
         name.
         """
-        return self.implementation.dump_missing_ifcfg_files()
+        return self.implementation.dump_missing_ifcfg_files_with_task()
 
     def NetworkDeviceConfigurationChanged(self):
         """Inform module that network device configuration might have changed.
