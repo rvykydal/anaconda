@@ -31,7 +31,8 @@ from pyanaconda.modules.network.kickstart import NetworkKickstartSpecification, 
 from pyanaconda.modules.network.firewall import FirewallModule
 from pyanaconda.modules.network.device_configuration import DeviceConfigurations, supported_device_types, \
     supported_wired_device_types
-from pyanaconda.modules.network.nm_client import get_device_name_from_network_data, devices_ignore_ipv6
+from pyanaconda.modules.network.nm_client import get_device_name_from_network_data, devices_ignore_ipv6, \
+    get_connections_dump
 from pyanaconda.modules.network.ifcfg import get_ifcfg_file_of_device, find_ifcfg_uuid_of_device, \
     get_dracut_arguments_from_ifcfg, get_kickstart_network_data, get_ifcfg_file, get_ifcfg_files_content
 from pyanaconda.modules.network.installation import NetworkInstallationTask
@@ -394,6 +395,8 @@ class NetworkModule(KickstartModule):
         valid (slave connection, regular device connection).
         """
         task = ConsolidateInitramfsConnectionsTask(self.nm_client)
+        task.succeeded_signal.connect(
+            lambda: self.log_network_configuration_state("{} succeeded".format(task.name)))
         return self.publish_task(NETWORK.namespace, task, InitializeTaskInterface)
 
     def get_supported_devices(self):
@@ -445,6 +448,8 @@ class NetworkModule(KickstartModule):
                                   supported_devices,
                                   self.bootif,
                                   self.ifname_option_values)
+        task.succeeded_signal.connect(
+            lambda: self.log_network_configuration_state("{} succeeded".format(task.name)))
         return self.publish_task(NETWORK.namespace, task, InitializeTaskInterface)
 
     def set_real_onboot_values_from_kickstart_with_task(self):
@@ -463,6 +468,8 @@ class NetworkModule(KickstartModule):
                                                     supported_devices,
                                                     self.bootif,
                                                     self.ifname_option_values)
+        task.succeeded_signal.connect(
+            lambda: self.log_network_configuration_state("{} succeeded".format(task.name)))
         return self.publish_task(NETWORK.namespace, task, InitializeTaskInterface)
 
     def dump_missing_ifcfg_files_with_task(self):
@@ -487,13 +494,14 @@ class NetworkModule(KickstartModule):
         task = DumpMissingIfcfgFilesTask(self.nm_client,
                                          default_network_data,
                                          self.ifname_option_values)
+        task.succeeded_signal.connect(
+            lambda: self.log_network_configuration_state("{} succeeded".format(task.name)))
         return self.publish_task(NETWORK.namespace, task, InitializeTaskInterface)
 
     def network_device_configuration_changed(self):
         if not self._device_configurations:
             log.error("Got request to use DeviceConfigurations that has not been created yet")
-        # TODO DBG - remove
-        self.log_network_configuration_state()
+        self.log_network_configuration_state("Network device configuration has changed")
         self._use_device_configurations = True
 
     def get_dracut_arguments(self, iface, target_ip, hostname):
@@ -541,6 +549,8 @@ class NetworkModule(KickstartModule):
 
         Logs ifcfg files and NM connections
         """
-        log.debug("Dumping configuration state for %s", msg_header)
-        for line in get_ifcfg_files_content():
+        log.debug("Dumping configuration state - %s", msg_header)
+        for line in get_ifcfg_files_content().splitlines():
+            log.debug(line)
+        for line in get_connections_dump(self.nm_client).splitlines():
             log.debug(line)
