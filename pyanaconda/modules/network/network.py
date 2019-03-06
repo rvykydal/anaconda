@@ -33,7 +33,7 @@ from pyanaconda.modules.network.device_configuration import DeviceConfigurations
     supported_wired_device_types
 from pyanaconda.modules.network.nm_client import get_device_name_from_network_data, devices_ignore_ipv6
 from pyanaconda.modules.network.ifcfg import get_ifcfg_file_of_device, find_ifcfg_uuid_of_device, \
-    get_dracut_arguments_from_ifcfg, get_kickstart_network_data, get_ifcfg_file
+    get_dracut_arguments_from_ifcfg, get_kickstart_network_data, get_ifcfg_file, get_ifcfg_files_content
 from pyanaconda.modules.network.installation import NetworkInstallationTask
 from pyanaconda.modules.network.initialization import ApplyKickstartTask, \
     ConsolidateInitramfsConnectionsTask, SetRealOnbootValuesFromKickstartTask, \
@@ -492,6 +492,8 @@ class NetworkModule(KickstartModule):
     def network_device_configuration_changed(self):
         if not self._device_configurations:
             log.error("Got request to use DeviceConfigurations that has not been created yet")
+        # TODO DBG - remove
+        self.log_network_configuration_state()
         self._use_device_configurations = True
 
     def get_dracut_arguments(self, iface, target_ip, hostname):
@@ -533,3 +535,12 @@ class NetworkModule(KickstartModule):
             self.ifname_option_values = kernel_arguments.get("ifname", "").split()
         if 'noipv6' in kernel_arguments:
             self.disable_ipv6 = True
+
+    def log_network_configuration_state(self, msg_header):
+        """Log the current network configuration state.
+
+        Logs ifcfg files and NM connections
+        """
+        log.debug("Dumping configuration state for %s", msg_header)
+        for line in get_ifcfg_files_content():
+            log.debug(line)
