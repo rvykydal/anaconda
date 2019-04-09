@@ -423,6 +423,11 @@ class NetworkModule(KickstartModule):
             if device.get_device_type() not in supported_device_types:
                 continue
             dev_info = NetworkDeviceInfo()
+            log.debug("Setting NetworkDeviceInfo from NM device {} {} {}".format(
+                device.get_iface(),
+                device.get_device_type(),
+                device.get_hw_address()
+            ))
             dev_info.set_from_nm_device(device)
             supported_devices.append(dev_info)
 
