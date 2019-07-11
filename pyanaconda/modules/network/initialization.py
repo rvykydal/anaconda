@@ -327,6 +327,18 @@ class DumpMissingIfcfgFilesTask(Task):
     def name(self):
         return "Dump missing ifcfg files"
 
+    def _get_initrafms_connection(self, device, cons):
+        """TODO."""
+        ac = device.get_active_connection()
+        if ac:
+            initramfs_con_id = ac.get_id()
+        else:
+            initramfs_con_id = device.get_iface()
+        for con in cons:
+            if con.get_id() == initramfs_con_id:
+                return con
+        return None
+
     @guard_by_system_configuration(return_value=[])
     def run(self):
         """Run dumping of missing ifcfg files.
@@ -376,9 +388,18 @@ class DumpMissingIfcfgFilesTask(Task):
                 con.commit_changes(True, None)
             elif n_cons > 1:
                 if not device_is_slave:
-                    log.warning("%s: %d non-slave connections found for device %s",
-                                self.name, n_cons, iface)
-                continue
+                    log.debug("%s: %d non-slave connections found for device %s",
+                              self.name, n_cons, iface)
+                    con = self._get_initrafms_connection(device, cons)
+                    if not con:
+                        log.warning("%s: none of the was connections identified as initramfs")
+                        continue
+                    log.debug("%s: dumping initramfs connection %s for %s",
+                              self.name, con.get_uuid(), iface)
+                    con.save()
+                    # TODO: bound hwaddr stuff
+                    s_wired = con.get_setting_wired()
+                    log.debug("RVDBG: s_wired: %s" % s_wired)
 
             new_ifcfgs.append(iface)
 
