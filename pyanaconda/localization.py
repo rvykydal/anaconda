@@ -28,6 +28,9 @@ from collections import namedtuple
 
 from pyanaconda.core import constants, util
 from pyanaconda.core.util import upcase_first_letter, setenv, execWithRedirect
+from pyanaconda.modules.common.constants.services import BOSS
+from pyanaconda.dbus.namespace import get_namespace_from_name, get_dbus_path
+from pyanaconda.dbus import DBus
 
 from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
@@ -277,7 +280,21 @@ def setup_locale(locale, localization_proxy=None, text_mode=False):
         setenv("LANG", locale)
         locale_mod.setlocale(locale_mod.LC_ALL, locale)
 
+    set_modules_locale(locale)
+
     return locale
+
+
+def set_modules_locale(locale):
+    log.debug("setting modules locale to: %s", locale)
+    boss_proxy = BOSS.get_proxy()
+    modules = boss_proxy.GetModules()
+    for service_name in modules:
+        namespace = get_namespace_from_name(service_name)
+        object_path = get_dbus_path(*namespace)
+        module_proxy = DBus.get_proxy(service_name, object_path)
+        module_proxy.SetLocale(locale)
+
 
 def get_english_name(locale):
     """

@@ -84,3 +84,10 @@ class AnacondaBossInterface(BossInterface):
             "line_number": get_variant(Int, result["line_number"]),
             "error_message": get_variant(Str, result["error_message"])
         } for result in results]
+
+    def GetModules(self) -> List[Str]:
+        """Get list of all modules
+
+        :return: list of names of module services
+        """
+        return self.implementation.get_modules()

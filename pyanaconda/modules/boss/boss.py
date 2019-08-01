@@ -132,3 +132,11 @@ class Boss(MainModule):
         task = self._install_manager.install_system_with_task()
         path = self.publish_task(BOSS.namespace, task)
         return path
+
+    def get_modules(self):
+        """Get list of all modules
+
+        :return: list of names of module services
+        """
+        modules = self._module_manager.module_observers
+        return [module.service_name for module in modules]
