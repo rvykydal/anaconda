@@ -386,6 +386,7 @@ class DumpMissingIfcfgFilesTask(Task):
                     log.debug("%s: iface %s bound to mac address by ifname boot option",
                               self.name, iface)
                 con.commit_changes(True, None)
+                con.update2(None, NM.SettingsUpdate2Flags.TO_DISK)
             elif n_cons > 1:
                 if not device_is_slave:
                     log.debug("%s: %d non-slave connections found for device %s",
@@ -396,7 +397,8 @@ class DumpMissingIfcfgFilesTask(Task):
                         continue
                     log.debug("%s: dumping initramfs connection %s for %s",
                               self.name, con.get_uuid(), iface)
-                    con.save()
+                    #con.save()
+                    con.update2(None, NM.SettingsUpdate2Flags.TO_DISK)
                     # TODO: bound hwaddr stuff
                     s_wired = con.get_setting_wired()
                     log.debug("RVDBG: s_wired: %s" % s_wired)
