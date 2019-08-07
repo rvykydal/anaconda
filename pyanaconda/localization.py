@@ -286,15 +286,9 @@ def setup_locale(locale, localization_proxy=None, text_mode=False):
 
 
 def set_modules_locale(locale):
-    log.debug("setting modules locale to: %s", locale)
+    """Set locale of all modules."""
     boss_proxy = BOSS.get_proxy()
-    modules = boss_proxy.GetModules()
-    for service_name in modules:
-        namespace = get_namespace_from_name(service_name)
-        object_path = get_dbus_path(*namespace)
-        module_proxy = DBus.get_proxy(service_name, object_path)
-        module_proxy.SetLocale(locale)
-
+    modules = boss_proxy.SetLocale(locale)
 
 def get_english_name(locale):
     """

@@ -85,9 +85,6 @@ class AnacondaBossInterface(BossInterface):
             "error_message": get_variant(Str, result["error_message"])
         } for result in results]
 
-    def GetModules(self) -> List[Str]:
-        """Get list of all modules
-
-        :return: list of names of module services
-        """
-        return self.implementation.get_modules()
+    def SetLocale(self, locale: Str):
+        """Set locale of all modules."""
+        self.implementation.set_locale(locale)

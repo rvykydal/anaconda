@@ -133,10 +133,11 @@ class Boss(MainModule):
         path = self.publish_task(BOSS.namespace, task)
         return path
 
-    def get_modules(self):
-        """Get list of all modules
+    def set_locale(self, locale):
+        """Set locale of all modules.
 
-        :return: list of names of module services
+        :param str locale: locale to set
         """
-        modules = self._module_manager.module_observers
-        return [module.service_name for module in modules]
+        log.info("Setting locale of all modules to %s.", locale)
+        for observer in self._module_manager.module_observers:
+            observer.proxy.SetLocale(locale)
