@@ -29,7 +29,6 @@ from collections import namedtuple
 from pyanaconda.core import constants, util
 from pyanaconda.core.util import upcase_first_letter, setenv, execWithRedirect
 from pyanaconda.modules.common.constants.services import BOSS
-from pyanaconda.dbus.namespace import get_namespace_from_name, get_dbus_path
 from pyanaconda.dbus import DBus
 
 from pyanaconda.anaconda_loggers import get_module_logger

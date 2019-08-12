@@ -86,5 +86,8 @@ class AnacondaBossInterface(BossInterface):
         } for result in results]
 
     def SetLocale(self, locale: Str):
-        """Set locale of all modules."""
+        """Set locale of boss and all modules.
+
+        Examples: "cs_CZ.UTF-8", "fr_FR"
+        """
         self.implementation.set_locale(locale)

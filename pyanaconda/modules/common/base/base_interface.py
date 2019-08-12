@@ -135,7 +135,7 @@ class KickstartModuleInterface(KickstartModuleInterfaceTemplate):
         from python modules to work, something needs to be set in the
         environment when the language changes.
 
-        :param str locale: locale to set
+        Examples: "cs_CZ.UTF-8", "fr_FR"
         """
         return self.implementation.set_locale(locale)
 

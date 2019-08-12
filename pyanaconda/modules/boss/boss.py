@@ -134,10 +134,10 @@ class Boss(MainModule):
         return path
 
     def set_locale(self, locale):
-        """Set locale of all modules.
+        """Set locale of boss and all modules.
 
         :param str locale: locale to set
         """
         log.info("Setting locale of all modules to %s.", locale)
-        for observer in self._module_manager.module_observers:
-            observer.proxy.SetLocale(locale)
+        super().set_locale(locale)
+        self._module_manager.set_modules_locale(locale)
