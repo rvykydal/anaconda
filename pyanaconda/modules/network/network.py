@@ -84,6 +84,7 @@ class NetworkModule(KickstartModule):
                 log.debug("NetworkManager is not running.")
 
         self._original_network_data = []
+        #[ONBOOT]
         self._onboot_yes_ifaces = []
         self._device_configurations = None
         self._use_device_configurations = False
@@ -339,6 +340,7 @@ class NetworkModule(KickstartModule):
             return False
         return True
 
+    #[ONBOOT]
     def _has_any_onboot_yes_device(self, device_configurations):
         """Does any device have ONBOOT value set to 'yes'?"""
         uuids = [dev_cfg.connection_uuid for dev_cfg in device_configurations.get_all()
@@ -378,6 +380,7 @@ class NetworkModule(KickstartModule):
 
         return ifaces
 
+    #[ONBOOT]
     def _update_network_data_with_onboot(self, network_data, ifaces):
         if not ifaces:
             return
