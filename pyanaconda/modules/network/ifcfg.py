@@ -487,7 +487,7 @@ def get_master_slaves_from_ifcfgs(nm_client, master_devname, root_path="", uuid=
         ifcfg = IfcfgFile(ifcfg_path)
         ifcfg.read()
         master = ifcfg.get("MASTER") or ifcfg.get("TEAM_MASTER") or ifcfg.get("BRIDGE")
-        if master in (master_devname, uuid):
+        if master and master in (master_devname, uuid):
             slaves.append((ifcfg.get("NAME"), ifcfg.get("UUID")))
     return slaves
 
