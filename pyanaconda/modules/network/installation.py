@@ -239,7 +239,7 @@ Name={}
 
 
 class ConfigureActivationOnBootTask(Task):
-    """Task for ...."""
+    """Task for configuration of automatic activation of devices on boot"""
 
     def __init__(self, nm_client, onboot_ifaces):
         """Create a new task.

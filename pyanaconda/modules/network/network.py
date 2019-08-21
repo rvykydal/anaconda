@@ -340,7 +340,6 @@ class NetworkModule(KickstartModule):
     def _should_apply_onboot_policy(self):
         """Should policy for ONBOOT of devices be applied?."""
         # Not if any network device was configured via kickstart.
-        return True
         if self._original_network_data:
             return False
         # Not if any network device was configured in UI.
