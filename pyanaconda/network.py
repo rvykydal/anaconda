@@ -581,3 +581,13 @@ def device_type_is_supported_wired(device_type):
 
 def can_overwrite_configuration(payload):
     return isinstance(payload, LiveImagePayload)
+
+
+def get_dracut_arguments(nic, host_address, ibft):
+    network_proxy = NETWORK.get_proxy()
+    if not ibft:
+        if not nic:
+            nic = iface_for_host_ip(host_address)
+    network_args = network_proxy.GetDracutArguments(nic, host_address, "", ibft)
+    log.debug("RVDBG: network_args: %s", network_args)
+

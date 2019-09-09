@@ -225,6 +225,11 @@ def _prepare_installation(storage, payload, ksdata):
         wait_for_threads.append(Task("Wait for all threads to finish", wait_for_all_treads))
         installation_queue.append(wait_for_threads)
 
+    # Test generating dracut args
+    dracut_args = Task("Generate dracut argumetns", task=network.get_dracut_arguments,
+                       task_args=("", "10.43.136.51", True))
+    installation_queue.append(dracut_args)
+
     # Save system time to HW clock.
     # - this used to be before waiting on threads, but I don't think that's needed
     if conf.system.can_set_hardware_clock:
