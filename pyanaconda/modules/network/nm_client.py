@@ -967,114 +967,158 @@ def get_dracut_arguments_from_connection(nm_client, connection, iface, target_ip
     :rtype: set(str)
     """
     netargs = set()
-    connection_uuid = connection.get_uuid()
 
     if ibft:
         netargs.add("rd.iscsi.ibft")
     elif target_ip:
         if hostname is None:
             hostname = ""
-        # if using ipv6
         if ':' in target_ip:
-            ip6_config = connection.get_setting_ip6_config()
-            ip6_method = ip6_config.get_method()
-            if ip6_method == NM.SETTING_IP6_CONFIG_METHOD_AUTO:
-                netargs.add("ip={}:auto6".format(iface))
-            elif ip6_method == NM.SETTING_IP6_CONFIG_METHOD_DHCP:
-                # Most probably not working
-                netargs.add("ip={}:dhcp6".format(iface))
-            elif ip6_method == NM.SETTING_IP6_CONFIG_METHOD_MANUAL:
-                if ip6_config.get_num_addresses() > 0:
-                    addr = ip6_config.get_address(0)
-                    ipaddr = "[{}/{}]".format(addr.get_address(), addr.get_prefix())
-                else:
-                    log.error("No ip6 address found for manual method in %s", connection_uuid)
-                gateway = ip6_config.get_gateway() or ""
-                if gateway:
-                    gateway = "[{}]".format(gateway)
-                netargs.add("ip={}::{}::{}:{}:none".format(ipaddr, gateway, hostname, iface))
+            # Using IPv6 target IP
+            ipv6_arg = _get_dracut_ipv6_argument(connection, iface, hostname)
+            if ipv6_arg:
+                netargs.add(ipv6_arg)
             else:
-                log.error("Unexpected ipv6 method %s found in connection %s", ip6_method, connection_uuid)
+                log.error("No IPv6 configuration found in connection %s", connection.get_uuid())
         else:
-            ip4_config = connection.get_setting_ip4_config()
-            ip4_method = ip4_config.get_method()
-            if ip4_method == NM.SETTING_IP4_CONFIG_METHOD_AUTO:
-                netargs.add("ip={}:dhcp".format(iface))
-            elif ip4_method == NM.SETTING_IP4_CONFIG_METHOD_MANUAL:
-                if ip4_config.get_num_addresses() > 0:
-                    addr = ip4_config.get_address(0)
-                    ip = addr.get_address()
-                    netmask = prefix2netmask(addr.get_prefix())
-                    gateway = ip4_config.get_gateway() or ""
-                    netargs.add("ip={}::{}:{}:{}:{}:none".format(ip, gateway, netmask, hostname, iface))
-                else:
-                    log.error("No ip4 address found for manual method in %s", connection_uuid)
+            # Using IPv4 target IP
+            ipv4_arg = _get_dracut_ipv4_argument(connection, iface, hostname)
+            if ipv4_arg:
+                netargs.add(ipv4_arg)
             else:
-                log.error("Unexpected ipv4 method %s found in connection %s", ip4_method, connection_uuid)
+                log.error("No IPv4 configuration found in connection %s", connection.get_uuid())
 
-        wired_setting = connection.get_setting_wired()
-        if wired_setting:
-            hwaddr = wired_setting.get_mac_address()
-            if hwaddr:
-                netargs.add("ifname={}:{}".format(iface, hwaddr.lower()))
+        ifname_arg = _get_dracut_ifname_argument_from_connection(connection, iface)
+        if ifname_arg:
+            netargs.add(ifname_arg)
 
-        if connection.get_connection_type() == "team":
-            slaves = sorted(get_slaves_from_connections(
-                nm_client,
-                "team",
-                [iface, connection_uuid]
-            ))
-            netargs.add("team={}:{}".format(iface, ",".join(s_iface for s_iface, _uuid in slaves)))
+        team_arg = _get_dracut_team_argument_from_connection(nm_client, connection, iface)
+        if team_arg:
+            netargs.add(team_arg)
 
-        if connection.get_connection_type() == "vlan":
-            setting_vlan = connection.get_setting_vlan()
-            parent_spec = setting_vlan.get_parent()
-            parent_con = None
-            parent = None
-            # parent can be specified by connection uuid (eg from nm-c-e)
-            if len(parent_spec) == NM_CONNECTION_UUID_LENGTH:
-                parent_con = nm_client.get_connection_by_uuid(parent_spec)
-                if parent_con:
-                    # On s390 with net.ifnames=0 there is no DEVICE so use NAME
-                    parent = parent_con.get_interface_name() or parent_con.get_id()
-            # parent can be specified by interface
-            else:
-                parent = parent_spec
-                parent_cons = get_connections_available_for_iface(nm_client, parent)
-                if len(parent_cons) != 1:
-                    log.error("unexpected number of connections found for vlan parent %s",
-                              parent_spec)
-                if parent_cons:
-                    parent_con = parent_cons[0]
+        vlan_arg, vlan_parent_connection = _get_dracut_vlan_argument_from_connection(nm_client,
+                                                                                     connection,
+                                                                                     iface)
+        if vlan_arg:
+            netargs.add(vlan_arg)
+        # For vlan the parent connection defines the s390 znet argument values
+        if vlan_parent_connection:
+            connection = vlan_parent_connection
 
-            if parent:
-                netargs.add("vlan={}:{}".format(iface, parent))
-            else:
-                log.error("can't find parent interface of vlan device %s specified by %s",
-                          iface, parent_spec)
-                return netargs
+    znet_arg = _get_dracut_znet_argument_from_connection(connection)
+    if znet_arg:
+        netargs.add(znet_arg)
 
-            if parent_con:
-                # Parent connection is required on s390 to get its dracut arguments
-                connection = parent_con
-            else:
-                log.error("can't find parent connection of vlan device %s specified by %s",
-                          iface, parent_spec)
-                return netargs
+    return netargs
 
-    # For vlan connection now refers to the parent connection
+
+def _get_dracut_ipv6_argument(connection, iface, hostname):
+    argument = ""
+    ip6_config = connection.get_setting_ip6_config()
+    ip6_method = ip6_config.get_method()
+    if ip6_method == NM.SETTING_IP6_CONFIG_METHOD_AUTO:
+        argument = "ip={}:auto6".format(iface)
+    elif ip6_method == NM.SETTING_IP6_CONFIG_METHOD_DHCP:
+        # Most probably not working
+        argument = "ip={}:dhcp6".format(iface)
+    elif ip6_method == NM.SETTING_IP6_CONFIG_METHOD_MANUAL:
+        ipaddr = ""
+        if ip6_config.get_num_addresses() > 0:
+            addr = ip6_config.get_address(0)
+            ipaddr = "[{}/{}]".format(addr.get_address(), addr.get_prefix())
+        gateway = ip6_config.get_gateway() or ""
+        if gateway:
+            gateway = "[{}]".format(gateway)
+        if ipaddr or gateway:
+            argument = ("ip={}::{}::{}:{}:none".format(ipaddr, gateway, hostname, iface))
+    return argument
+
+
+def _get_dracut_ipv4_argument(connection, iface, hostname):
+    argument = ""
+    ip4_config = connection.get_setting_ip4_config()
+    ip4_method = ip4_config.get_method()
+    if ip4_method == NM.SETTING_IP4_CONFIG_METHOD_AUTO:
+        argument = "ip={}:dhcp".format(iface)
+    elif ip4_method == NM.SETTING_IP4_CONFIG_METHOD_MANUAL:
+        if ip4_config.get_num_addresses() > 0:
+            addr = ip4_config.get_address(0)
+            ip = addr.get_address()
+            netmask = prefix2netmask(addr.get_prefix())
+            gateway = ip4_config.get_gateway() or ""
+            argument = "ip={}::{}:{}:{}:{}:none".format(ip, gateway, netmask, hostname, iface)
+    return argument
+
+
+def _get_dracut_ifname_argument_from_connection(connection, iface):
+    argument = ""
     wired_setting = connection.get_setting_wired()
+    if wired_setting:
+        hwaddr = wired_setting.get_mac_address()
+        if hwaddr:
+            argument = "ifname={}:{}".format(iface, hwaddr.lower())
+    return argument
+
+
+def _get_dracut_team_argument_from_connection(nm_client, connection, iface):
+    argument = ""
+    if connection.get_connection_type() == "team":
+        slaves = sorted(get_slaves_from_connections(
+            nm_client,
+            "team",
+            [iface, connection.get_uuid()]
+        ))
+        argument = "team={}:{}".format(iface, ",".join(s_iface for s_iface, _uuid in slaves))
+    return argument
+
+
+def _get_dracut_vlan_argument_from_connection(nm_client, connection, iface):
+    argument = ""
+    parent_con = None
+    if connection.get_connection_type() == "vlan":
+        setting_vlan = connection.get_setting_vlan()
+        parent_spec = setting_vlan.get_parent()
+        parent = None
+        # parent can be specified by connection uuid (eg from nm-c-e)
+        if len(parent_spec) == NM_CONNECTION_UUID_LENGTH:
+            parent_con = nm_client.get_connection_by_uuid(parent_spec)
+            if parent_con:
+                # On s390 with net.ifnames=0 there is no DEVICE so use NAME
+                parent = parent_con.get_interface_name() or parent_con.get_id()
+        # parent can be specified by interface
+        else:
+            parent = parent_spec
+            parent_cons = get_connections_available_for_iface(nm_client, parent)
+            if len(parent_cons) != 1:
+                log.error("unexpected number of connections found for vlan parent %s",
+                            parent_spec)
+            if parent_cons:
+                parent_con = parent_cons[0]
+
+        if parent:
+            argument = "vlan={}:{}".format(iface, parent)
+        else:
+            log.error("can't find parent interface of vlan device %s specified by %s",
+                        iface, parent_spec)
+        if not parent_con:
+            log.error("can't find parent connection of vlan device %s specified by %s",
+                        iface, parent_spec)
+
+    return argument, parent_con
+
+
+def _get_dracut_znet_argument_from_connection(connection):
+    wired_setting = connection.get_setting_wired()
+    argument = ""
     if wired_setting:
         nettype = wired_setting.get_s390_nettype()
         subchannels = wired_setting.get_s390_subchannels()
         if is_s390() and nettype and subchannels:
-            znet = "rd.znet={},{}".format(nettype, subchannels)
+            argument = "rd.znet={},{}".format(nettype, subchannels)
             options = wired_setting.get_s390_options()
             if options:
-                znet += ",{}".format(','.join("{}={}".format(key, value) for key, value in options.items()))
-            netargs.add(znet)
-
-    return netargs
+                argument += ",{}".format(','.join("{}={}".format(key, value) for key, value in options.items()))
+    return argument
 
 
 def get_slaves_from_connections(nm_client, slave_type, master_specs):
