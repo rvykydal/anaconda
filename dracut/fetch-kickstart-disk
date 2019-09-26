@@ -21,7 +21,7 @@ else
     if mount -o ro $dev $tmpmnt; then
         cp $tmpmnt/$path /tmp/ks.cfg 2>&1
         umount $tmpmnt
-        rmdir $tmpmnt
+        rm -d $tmpmnt
     fi
 fi
 
