@@ -59,22 +59,12 @@ class HostnameConfigurationTask(Task):
         return "Configure hostname"
 
     def run(self):
-        self._write_hostname(self._sysroot, self._hostname, self._overwrite)
-
-    def _write_hostname(self, root, hostname, overwrite):
-        """Write static hostname to the target system configuration file.
-
-        :param root: path to the root of the target system
-        :type root: str
-        :param hostname: static hostname
-        :type hostname: str
-        :param overwrite: overwrite existing configuration file
-        :type overwrite: bool
-        """
-        return _write_config_file(root, self.HOSTNAME_CONF_FILE_PATH,
-                                  "{}\n".format(hostname),
-                                  "Cannot write hostname configuration file",
-                                  overwrite)
+        _write_config_file(
+            self._sysroot, self.HOSTNAME_CONF_FILE_PATH,
+            "{}\n".format(self._hostname),
+            "Cannot write hostname configuration file",
+            self._overwrite
+        )
 
 
 def _write_config_file(root, path, content, error_msg, overwrite):

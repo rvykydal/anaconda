@@ -342,7 +342,6 @@ class NetworkModule(KickstartModule):
         :param overwrite: overwrite existing configuration
         :return: a DBus path of an installation task
         """
-
         return HostnameConfigurationTask(
             conf.target.system_root,
             self.hostname,

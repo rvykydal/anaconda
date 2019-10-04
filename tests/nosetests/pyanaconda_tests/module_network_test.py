@@ -198,9 +198,7 @@ class NetworkInterfaceTestCase(unittest.TestCase):
             ]
         )
 
-        task_path = self.network_interface.InstallNetworkWithTask(
-            False,
-        )
+        task_path = self.network_interface.InstallNetworkWithTask(False)
 
         obj = check_task_creation(self, task_path, publisher, NetworkInstallationTask)
 
