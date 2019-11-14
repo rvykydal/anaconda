@@ -114,8 +114,8 @@ class LocaledWrapper(object):
                       "X11Options property")
             return ""
 
-        # returned GVariant is unpacked to a tuple with a single element
-        return options[0]
+        # returned GVariant is unpacked to a tuple with options
+        return options
 
     def set_keymap(self, keymap, convert=False):
         """
