@@ -22,7 +22,7 @@ from pyanaconda.modules.common.constants.services import LOCALIZATION
 from pyanaconda.dbus.property import emits_properties_changed
 from pyanaconda.dbus.typing import *  # pylint: disable=wildcard-import
 from pyanaconda.modules.common.base import KickstartModuleInterface
-+from pyanaconda.modules.common.containers import TaskContainer
+from pyanaconda.modules.common.containers import TaskContainer
 from pyanaconda.dbus.interface import dbus_interface
 
 
@@ -173,4 +173,13 @@ class LocalizationInterface(KickstartModuleInterface):
         """
         return TaskContainer.to_object_path(
             self.implementation.convert_missing_keyboard_configuration_with_task()
+        )
+
+    def ApplyKeyboardWithTask(self) -> ObjPath:
+        """Apply keyboard configuration to the current system.
+
+        :return: DBus path of the task applying the configuration
+        """
+        return TaskContainer.to_object_path(
+            self.implementation.apply_keyboard_with_task()
         )
