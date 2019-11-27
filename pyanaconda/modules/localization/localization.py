@@ -20,7 +20,6 @@
 from pyanaconda.core.configuration.anaconda import conf
 from pyanaconda.core.dbus import DBus
 from pyanaconda.core.signal import Signal
-from pyanaconda.core.constants import DEFAULT_KEYBOARD
 from pyanaconda.modules.common.base import KickstartService
 from pyanaconda.modules.common.constants.services import LOCALIZATION
 from pyanaconda.modules.common.containers import TaskContainer
