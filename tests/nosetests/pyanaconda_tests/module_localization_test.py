@@ -27,11 +27,12 @@ from textwrap import dedent
 from tests.nosetests.pyanaconda_tests import check_kickstart_interface, patch_dbus_publish_object, \
         PropertiesChangedCallback, check_task_creation
 
-from pyanaconda.core.constants import DEFAULT_KEYBOARD
+from pyanaconda.core.constants import DEFAULT_KEYBOARD, DEFAULT_VC_FONT
 from pyanaconda.modules.common.constants.services import LOCALIZATION
 from pyanaconda.modules.common.errors.configuration import KeyboardConfigurationError
+from pyanaconda.modules.common.errors.installation import KeyboardInstallationError
 from pyanaconda.modules.localization.installation import LanguageInstallationTask, \
-    KeyboardInstallationTask
+    KeyboardInstallationTask, write_vc_configuration, VC_CONF_FILE_PATH
 from pyanaconda.modules.localization.localization import LocalizationService
 from pyanaconda.modules.localization.localization_interface import LocalizationInterface
 from pyanaconda.modules.localization.runtime import GetMissingKeyboardConfigurationTask, \
@@ -614,6 +615,7 @@ class LocalizationTasksTestCase(unittest.TestCase):
 
     @patch("pyanaconda.modules.localization.runtime.execWithRedirect")
     def try_to_load_keymap_test(self, exec_with_redirect):
+        """Test try_to_load_keymap function."""
         keymap = "us"
 
         exec_with_redirect.return_value = 0
@@ -632,3 +634,21 @@ class LocalizationTasksTestCase(unittest.TestCase):
         with self.assertRaises(KeyboardConfigurationError):
             rc = try_to_load_keymap(keymap)
         exec_with_redirect.assert_called_once_with("loadkeys", [keymap])
+
+    def write_vc_configuration_test(self):
+        """Test write_vc_configuration function."""
+        with tempfile.TemporaryDirectory() as root:
+            vc_keymap = "us"
+            # /etc dir does not exist in root therefore the exception
+            with self.assertRaises(KeyboardInstallationError):
+                write_vc_configuration(vc_keymap, root)
+
+        with tempfile.TemporaryDirectory() as root:
+            vc_keymap = "us"
+            os.mkdir(os.path.join(root, "etc"))
+            write_vc_configuration(vc_keymap, root)
+            fpath = os.path.normpath(root + VC_CONF_FILE_PATH)
+            # Check the result.
+            with open(fpath) as f:
+                self.assertEqual(f.read(), 'KEYMAP="{}"\nFONT="{}"\n'.format(vc_keymap,
+                                                                         DEFAULT_VC_FONT))
