@@ -102,6 +102,7 @@ class KeyboardInstallationTask(Task):
 
         x_layouts = self._x_layouts
         vc_keymap = self._vc_keymap
+
         if not self._x_layouts or not self._vc_keymap:
             x_layouts, vc_keymap = get_missing_keyboard_configuration(
                 localed_wrapper,
@@ -109,7 +110,7 @@ class KeyboardInstallationTask(Task):
                 self._vc_keymap
             )
 
-        if self._x_layouts:
+        if x_layouts:
             write_x_configuration(
                 localed_wrapper,
                 x_layouts,
@@ -117,7 +118,7 @@ class KeyboardInstallationTask(Task):
                 X_CONF_DIR,
                 self._sysroot
             )
-        if self._vc_keymap:
+        if vc_keymap:
             write_vc_configuration(
                 vc_keymap,
                 self._sysroot
