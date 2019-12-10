@@ -476,7 +476,7 @@ class LocaledWrapper(object):
             return ""
 
         # returned GVariant is unpacked to a tuple with a single element
-        return options[0]
+        return options
 
     def set_keymap(self, keymap, convert=False):
         """
