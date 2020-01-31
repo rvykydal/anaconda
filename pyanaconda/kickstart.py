@@ -329,23 +329,12 @@ class Timezone(RemovedCommand):
 
         # do not install and use NTP package
         if not timezone_proxy.NTPEnabled or NTP_PACKAGE in ksdata.packages.excludedList:
-            if util.service_running(NTP_SERVICE) and conf.system.can_set_time_synchronization:
-                ret = util.stop_service(NTP_SERVICE)
-                if ret != 0:
-                    timezone_log.error("Failed to stop NTP service")
-
-            if NTP_SERVICE not in disabled_services:
+           if NTP_SERVICE not in disabled_services:
                 disabled_services.append(NTP_SERVICE)
                 services_proxy.SetDisabledServices(disabled_services)
         # install and use NTP package
         else:
-            if not util.service_running(NTP_SERVICE) and conf.system.can_set_time_synchronization:
-                ret = util.start_service(NTP_SERVICE)
-                if ret != 0:
-                    timezone_log.error("Failed to start NTP service")
-
             self.packages.append(NTP_PACKAGE)
-
             if not NTP_SERVICE in enabled_services and \
                     not NTP_SERVICE in disabled_services:
                 enabled_services.append(NTP_SERVICE)
