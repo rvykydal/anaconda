@@ -28,7 +28,7 @@ from pyanaconda.timezone import is_valid_timezone
 
 from blivet import arch
 
-__all__ = ["ConfigureNTPTask", "ConfigureTimezoneTask"]
+__all__ = ["ConfigureNTPTask", "ConfigureTimezoneTask", "ConfigureNTPServiceEnablementTask"]
 
 log = get_module_logger(__name__)
 
@@ -192,10 +192,10 @@ class ConfigureNTPServiceEnablementTask(Task):
         disabled_services = services_proxy.DisabledServices
 
         if self._ntp_enabled and not self._ntp_excluded:
-            if NTP_SERVICE not in disabled_services:
-                disabled_services.append(NTP_SERVICE)
-                services_proxy.SetDisabledServices(disabled_services)
-        else:
             if NTP_SERVICE not in enabled_services and NTP_SERVICE not in disabled_services:
                 enabled_services.append(NTP_SERVICE)
                 services_proxy.SetEnabledServices(enabled_services)
+        else:
+            if NTP_SERVICE not in disabled_services:
+                disabled_services.append(NTP_SERVICE)
+                services_proxy.SetDisabledServices(disabled_services)
