@@ -322,7 +322,13 @@ def ensure_active_ifcfg_connection_for_device(ifcfg_path, dev_name, only_replace
     ifcfg = IfcfgFile(ifcfg_path)
     ifcfg.read()
     con_uuid = ifcfg.get("UUID")
-    active_con_uuid = nm.nm_device_active_con_uuid(dev_name)
+    try:
+        active_con_uuid = nm.nm_device_active_con_uuid(dev_name)
+    except nm.UnknownDeviceError as e:
+        log.debug("ensure active ifcfg connection for %s: %s",
+                  dev_name, e)
+        msg = "not acitvating, device not found"
+        active_con_uuid = None
     if active_con_uuid or not only_replace:
         if con_uuid != active_con_uuid:
             msg = "activating"
