@@ -488,9 +488,11 @@ class CustomPartitioningSpoke(NormalSpoke, StorageCheckHandler):
         selector.props.mountpoint = mount_point
         selector.root_name = root_name
 
-    def _do_refresh(self, mountpoint_to_show=None):
+    def _do_refresh(self, mountpoint_to_show=None, keep_expanded_pages=False):
         # block mountpoint selector signal handler for now
         self._initialized = False
+        expanded_pages = [page.page_title for page in self._accordion.all_pages
+                          if page.get_parent().get_expanded()]
         self._accordion.clear_current_selector()
 
         # Start with buttons disabled, since nothing is selected.
@@ -503,8 +505,11 @@ class CustomPartitioningSpoke(NormalSpoke, StorageCheckHandler):
         # And then open the first page by default.  Most of the time, this will
         # be fine since it'll be the new installation page.
         self._initialized = True
+
         first_page = self._accordion.all_pages[0]
-        self._accordion.expand_page(first_page.page_title)
+        if not keep_expanded_pages:
+            expanded_pages = [first_page.page_title]
+        self._expand_pages(expanded_pages)
         self._show_mountpoint(page=first_page, mountpoint=mountpoint_to_show)
 
         self._applyButton.set_sensitive(False)
@@ -512,6 +517,13 @@ class CustomPartitioningSpoke(NormalSpoke, StorageCheckHandler):
 
         # Set up the free space/available space labels.
         self._update_space_display()
+
+    def _expand_pages(self, page_titles):
+        all_pages = [page.page_title for page in self._accordion.all_pages]
+        for page_title in page_titles:
+            if page_title not in all_pages:
+                continue
+            self._accordion.expand_page(page_title)
 
     ###
     ### RIGHT HAND SIDE METHODS
@@ -1063,7 +1075,7 @@ class CustomPartitioningSpoke(NormalSpoke, StorageCheckHandler):
         sync_run_task(task_proxy)
 
         # Refresh UI.
-        self._do_refresh()
+        self._do_refresh(keep_expanded_pages=True)
 
     def _remove_selected_devices(self):
         option_checked = False
