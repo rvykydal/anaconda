@@ -352,6 +352,11 @@ def ksnet_to_dracut(args, lineno, net, bootdev=False):
             net.device = "ksdev0" # we only get called once, so this is OK
             line.append("ifname=%s:%s" % (net.device, mac.lower()))
 
+    device = net.device
+    if net.vlanid:
+        device = "%s.%s" % (net.device, net.vlanid)
+        line.append("vlan=%s:%s" % (device, net.device))
+
     # NOTE: dracut currently only does ipv4 *or* ipv6, so only one ip=arg..
     if net.bootProto in (BOOTPROTO_DHCP, BOOTPROTO_BOOTP):
         autoconf="dhcp"
@@ -366,7 +371,7 @@ def ksnet_to_dracut(args, lineno, net, bootdev=False):
             log.warn("line %u: network missing %s", lineno, missing)
         else:
             ip="{0.ip}::{0.gateway}:{0.netmask}:" \
-               "{0.hostname}:{0.device}:none:{0.mtu}".format(net)
+               "{0.hostname}:{1}:none:{0.mtu}".format(net, device)
     elif net.ipv6 == "auto":
         autoconf="auto6"
     elif net.ipv6 == "dhcp":
@@ -376,8 +381,8 @@ def ksnet_to_dracut(args, lineno, net, bootdev=False):
            "{0.hostname}:{0.device}:none:{0.mtu}".format(net)
 
     if autoconf:
-        if net.device or net.mtu:
-            ip="%s:%s:%s" % (net.device, autoconf, net.mtu)
+        if device or net.mtu:
+            ip="%s:%s:%s" % (device, autoconf, net.mtu)
         else:
             ip=autoconf
 
@@ -389,8 +394,8 @@ def ksnet_to_dracut(args, lineno, net, bootdev=False):
             line.append("nameserver=%s" % ns)
 
     if bootdev:
-        if net.device:
-            line.append("bootdev=%s" % net.device)
+        if device:
+            line.append("bootdev=%s" % device)
         # touch /tmp/net.ifaces to make sure dracut brings up network
         open("/tmp/net.ifaces", "a")
 
@@ -399,7 +404,7 @@ def ksnet_to_dracut(args, lineno, net, bootdev=False):
         log.error("'%s': dracut doesn't support wireless networks",
                       " ".join(args))
     if net.bridgeslaves:
-        line.append("bridge=%s:%s" % (net.device, net.bridgeslaves))
+        line.append("bridge=%s:%s" % (device, net.bridgeslaves))
 
     return " ".join(line)
 
