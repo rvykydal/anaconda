@@ -25,7 +25,8 @@ from pyanaconda.modules.network.nm_client import get_device_name_from_network_da
     add_connection_from_ksdata, bound_hwaddr_of_device, get_connections_available_for_iface, \
     update_connection_values, commit_changes_with_autoconnection_blocked, is_ibft_connection, \
     get_config_file_connection_of_device, get_slaves_from_connections
-from pyanaconda.modules.network.device_configuration import supported_wired_device_types
+from pyanaconda.modules.network.device_configuration import supported_wired_device_types, \
+    virtual_device_types
 from pyanaconda.modules.network.utils import guard_by_system_configuration
 
 log = get_module_logger(__name__)
@@ -433,8 +434,9 @@ class DumpMissingConfigFilesTask(Task):
             log.debug("%s: No NetworkManager available.", self.name)
             return new_configs
 
+        dumped_device_types = supported_wired_device_types + virtual_device_types
         for device in self._nm_client.get_devices():
-            if device.get_device_type() not in supported_wired_device_types:
+            if device.get_device_type() not in dumped_device_types:
                 continue
 
             iface = device.get_iface()
@@ -448,9 +450,14 @@ class DumpMissingConfigFilesTask(Task):
 
             device_is_slave = any(con.get_setting_connection().get_master() for con in cons)
             if device_is_slave:
-                log.debug("%s: not creating default connection for slave device %s",
-                          self.name, iface)
-                continue
+                # We have to dump persistent ifcfg files for slaves created in initramfs
+                if n_cons == 1 and self._is_initramfs_connection(cons[0], iface):
+                    log.debug("%s: device %s has an initramfs slave connection",
+                              self.name, iface)
+                else:
+                    log.debug("%s: not creating default connection for slave device %s",
+                              self.name, iface)
+                    continue
 
             # Devices activated in initramfs should have ONBOOT=yes
             has_initramfs_con = any(self._is_initramfs_connection(con, iface) for con in cons)
