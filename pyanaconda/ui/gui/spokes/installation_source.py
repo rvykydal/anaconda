@@ -1063,10 +1063,6 @@ class SourceSpoke(NormalSpoke, GUISpokeInputCheckHandler, SourceSwitchHandler):
         if not self._network_module.Connected:
             self._network_button.set_sensitive(False)
             self._network_box.set_sensitive(False)
-
-            self.clear_info()
-            self.set_warning(_("You need to configure the network to use a network "
-                               "installation source."))
         else:
             if self._error:
                 self.clear_info()
@@ -1077,6 +1073,11 @@ class SourceSpoke(NormalSpoke, GUISpokeInputCheckHandler, SourceSwitchHandler):
 
         # Update the URL entry validation now that we're done messing with sensitivites
         self._update_url_entry_check()
+
+        if not self._network_box.is_sensitive():
+            self.clear_info()
+            self.set_warning(_("You need to configure the network to use a network "
+                               "installation source."))
 
     def _setup_updates(self):
         """ Setup the state of the No Updates checkbox.
