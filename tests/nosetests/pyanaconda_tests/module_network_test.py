@@ -1336,7 +1336,7 @@ class InstallationTaskTestCase(unittest.TestCase):
                 ("ens10.nmconnection", "content1"),
                 ("ens11.nmconnection", "content2"),
                 ("ens10.whatever", "content3"),
-                ("ens15.whatever", "content4"),
+                ("whatever", "content4"),
             )
         )
         self._dump_config_files(
@@ -1372,7 +1372,7 @@ class InstallationTaskTestCase(unittest.TestCase):
             sysroot=self._target_root,
             disable_ipv6=True,
             overwrite=True,
-            network_ifaces=["ens3", "ens7", "ens10", "ens11"],
+            network_ifaces=["ens3", "ens7", "ens10"],
             ifname_option_values=["ens3:00:15:17:96:75:0a"],
             # Perhaps does not make sense together with ifname option, but for
             # test it is fine
@@ -1462,6 +1462,20 @@ class InstallationTaskTestCase(unittest.TestCase):
             "ens11.connections",
             """
             content2
+            """
+        )
+        self._check_config_file(
+            self._nm_syscons_dir,
+            "ens10.whatever",
+            """
+            content3
+            """
+        )
+        self._check_config_file(
+            self._nm_syscons_dir,
+            "whatever",
+            """
+            content4
             """
         )
         self._check_config_file_does_not_exist(
