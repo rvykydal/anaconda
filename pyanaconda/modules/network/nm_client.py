@@ -1273,3 +1273,83 @@ def get_config_file_connection_of_device(nm_client, device_name, device_hwaddr=N
         return cons[0].get_uuid()
     else:
         log.debug("Config file for %s not found", device_name)
+
+
+def get_kickstart_network_data(uuid, nm_client, network_data_class):
+    """Get kickstart data from NM connection.
+
+    :param uuid: uuid of NM RemoteConnection
+    :type uuid: str
+    :param nm_client: instance of NetworkManager client
+    :type nm_client: NM.Client
+    :param network_data_class: pykickstart network command data class
+    :type: pykickstart BaseData
+    :returns: network_data object corresponding to the connection
+    :rtype: network_data_class object instance
+    """
+    con = nm_client.get_connection_by_uuid(uuid)
+    if not con:
+        log.debug("Connection %s for kickstart data generating not found", uuid)
+        return None
+
+    # no network command for non-virtual device slaves
+    if con.get_setting_connection.get_connection_type() not in ('bond', 'team'):
+        if con.get_setting_connection.get_master():
+            return None
+
+    # no support for wireless
+    if con.get_setting_connection.get_connection_type() == '802-11-wireless':
+        return None
+
+    network_data = network_data_class()
+    # ipv4 and ipv6
+    network_data.onboot = con.get_setting_connection.get_autoconnect()
+    # ipv4
+    s_ip4_config = con.get_setting_ip4_config()
+    ip4_method = s_ip4_config.get_method()
+    if ip4_method == NM.SETTING_IP4_CONFIG_METHOD_DISABLED:
+        network_data.noipv4 = True
+    elif ip4_method == NM.SETTING_IP4_CONFIG_METHOD_AUTO:
+        network_data.bootProto = "dhcp"
+    elif ip4_method == NM.SETTING_IP4_CONFIG_METHOD_MANUAL:
+        network_data.bootProto = "static"
+        if s_ip4_config.get_num_addresses() > 0:
+            addr = s_ip4_config.get_address(0)
+            network_data.ip = addr.get_address()
+            netmask = prefix2netmask(addr.get_prefix())
+            if netmask:
+                network_data.netmask = netmask
+            # note that --gateway is common for ipv4 and ipv6
+            gateway = s_ip4_config.get_gateway()
+            if gateway:
+                network_data.gateway = gateway
+    # TODO: split
+    # ipv6
+    s_ip6_config = con.get_setting_ip6_config()
+    ip6_method = s_ip6_config.get_method()
+    if ip6_method == NM.SETTING_IP6_CONFIG_METHOD_DISABLED:
+        network_data.noipv6 = True
+    elif ip6_method == NM.SETTING_IP6_CONFIG_METHOD_AUTO:
+        network_data.ipv6 = "auto"
+    elif ip6_method == NM.SETTING_IP6_CONFIG_METHOD_DHCP:
+        network_data.ipv6 = "dhcp"
+    elif ip6_method == NM.SETTING_IP6_CONFIG_METHOD_MANUAL:
+        if s_ip6_config.get_num_addresses() > 0:
+            addr = s_ip6_config.get_address(0)
+            network_data.ipv6 = "{}/{}".format(addr.get_address(), addr.get_prefix())
+        gateway = s_ip6_config.get_gateway()
+        if gateway:
+            network_data.ipv6gateway = gateway
+
+    # ipv4 and ipv6
+    #TODO
+
+
+
+
+    s_wired = con.get_setting_wired()
+    if s_wired:
+        if s_wired.get_mtu():
+            network_data.mtu = s_wired.get_mtu()
+
+    return network_data
