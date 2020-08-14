@@ -1,5 +1,5 @@
 #
-# Handling of ifcfg files
+# Handling of NM connection configuration files
 #
 # Copyright (C) 2019 Red Hat, Inc.
 #
@@ -23,6 +23,7 @@ import os
 from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
 
+__all__ = ["get_config_files_content"]
 
 IFCFG_DIR = "/etc/sysconfig/network-scripts"
 KEYFILE_DIR = "/etc/NetworkManager/system-connections"
