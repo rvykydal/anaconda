@@ -720,7 +720,7 @@ class NMClientTestCase(unittest.TestCase):
     @patch("pyanaconda.modules.network.nm_client.get_slaves_from_connections")
     @patch("pyanaconda.modules.network.nm_client.get_iface_from_connection")
     def get_kicstart_network_data_test(self, get_iface_from_connection,
-                                       get_slaves_from_connections,
+                                       get_slaves_from_connections_mock,
                                        get_team_port_config_from_connection):
         """Test get_kickstart_network_data."""
         nm_client = Mock()
@@ -768,7 +768,7 @@ class NMClientTestCase(unittest.TestCase):
                           ("team0_slave_2", "ens8", ENS8_UUID)]),
             "bridge0": set([("bridge0_slave_1", "ens8", ENS8_UUID)]),
         }
-        get_slaves_from_connections.side_effect = \
+        get_slaves_from_connections_mock.side_effect = \
             lambda _client, _types, ids: slaves_of_iface[ids[0]]
 
         uuid_to_port_config = {
