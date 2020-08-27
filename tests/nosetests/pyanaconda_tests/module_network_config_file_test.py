@@ -100,7 +100,7 @@ class ConfigFileTestCase(unittest.TestCase):
         )
 
     @patch("pyanaconda.modules.network.config_file.get_config_files_paths")
-    def get_config_files_content_test(self, get_config_files_paths):
+    def get_config_files_content_test(self, get_config_files_paths_mock):
         """Test get_config_files_content."""
         files = [
             ("/file1",
@@ -120,7 +120,7 @@ class ConfigFileTestCase(unittest.TestCase):
         """.format(self._root_dir, self._root_dir)
         self._dump_files(files, root_path=self._root_dir)
 
-        get_config_files_paths.return_value = [
+        get_config_files_paths_mock.return_value = [
             "{}/file1".format(self._root_dir),
             "{}/dir/file2".format(self._root_dir),
         ]
