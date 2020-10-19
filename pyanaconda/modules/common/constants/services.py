@@ -20,7 +20,7 @@ from pyanaconda.core.dbus import SystemBus, DBus
 from dasbus.identifier import DBusServiceIdentifier
 from pyanaconda.modules.common.constants.namespaces import BOSS_NAMESPACE, TIMEZONE_NAMESPACE, \
     NETWORK_NAMESPACE, LOCALIZATION_NAMESPACE, SECURITY_NAMESPACE, USERS_NAMESPACE, BAZ_NAMESPACE, \
-    PAYLOADS_NAMESPACE, STORAGE_NAMESPACE, SERVICES_NAMESPACE
+    PAYLOADS_NAMESPACE, STORAGE_NAMESPACE, SERVICES_NAMESPACE, NETWORK_MANAGER_NAMESPACE
 
 # Anaconda services.
 
@@ -89,5 +89,10 @@ LOCALED = DBusServiceIdentifier(
     service_version=1,
     object_version=1,
     interface_version=1,
+    message_bus=SystemBus
+)
+
+NETWORK_MANAGER = DBusServiceIdentifier(
+    namespace=NETWORK_MANAGER_NAMESPACE,
     message_bus=SystemBus
 )

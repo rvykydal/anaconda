@@ -100,3 +100,7 @@ SOURCE_NAMESPACE = (
     *PAYLOADS_NAMESPACE,
     "Source"
 )
+
+NETWORK_MANAGER_NAMESPACE = (
+    "org", "freedesktop", "NetworkManager"
+)
