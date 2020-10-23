@@ -63,7 +63,7 @@ __all__ = ["get_supported_devices", "status_message", "wait_for_connectivity",
 
 def get_nm_client():
     """Get NetworkManager Client."""
-    if conf.system.provides_system_bus:
+    if True or conf.system.provides_system_bus:
         global _nm_client
         if not _nm_client:
             _nm_client = NM.Client.new(None)
