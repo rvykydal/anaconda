@@ -216,6 +216,7 @@
           <object class="GtkTreeView" id="configure_wireless_network_treeview">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="vexpand">True</property>
             <property name="model">liststore_configure_wireless_network</property>
             <property name="headers_visible">False</property>
             <property name="enable_search">False</property>
@@ -348,6 +349,7 @@
           <object class="GtkTreeView" id="select_wireless_network_treeview">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
+            <property name="vexpand">True</property>
             <property name="model">liststore_wireless_network</property>
             <property name="headers_visible">False</property>
             <property name="enable_search">False</property>
