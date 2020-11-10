@@ -1216,7 +1216,7 @@ class SelectWirelessNetworksDialog(GUIObject):
     uiFile = "spokes/network.glade"
 
     def __init__(self, data, nm_client):
-        GUIObject.__init__(self, data)
+        super().__init__(self, data)
         self._nm_client = nm_client
         self._device_name = None
 
