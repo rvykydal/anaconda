@@ -373,9 +373,6 @@ class NetworkControlBox(GObject.GObject):
         self.button_apply_hostname = self.builder.get_object("button_apply_hostname")
         self.button_apply_hostname.connect("clicked", self.on_apply_hostname)
 
-        self._conf_wireless_dialog = ConfigureWirelessNetworksDialog(self.spoke.data, self.client)
-        self._conf_wireless_dialog.initialize()
-
 
     @property
     def vbox(self):
@@ -512,14 +509,15 @@ class NetworkControlBox(GObject.GObject):
         if device_type == NM.DeviceType.WIFI:
 
             # Run dialog
-            with self.spoke.main_window.enlightbox(self._conf_wireless_dialog.window):
-                self._conf_wireless_dialog.refresh(iface)
-                rc = self._conf_wireless_dialog.run()
+            dialog = ConfigureWirelessNetworksDialog(self.spoke.data, self.client)
+            with self.spoke.main_window.enlightbox(dialog.window):
+                dialog.refresh(iface)
+                rc = dialog.run()
                 if rc != 1:
                     return
 
-                con_uuid = self._conf_wireless_dialog.selected_uuid
-                selected_ssid = self._conf_wireless_dialog.selected_ssid
+                con_uuid = dialog.selected_uuid
+                selected_ssid = dialog.selected_ssid
 
             if not con_uuid:
                 return
@@ -1135,7 +1133,6 @@ class ConfigureWirelessNetworksDialog(GUIObject):
         GUIObject.__init__(self, data)
         self._nm_client = nm_client
 
-    def initialize(self):
         self.window.set_size_request(500, 300)
         self._store = self.builder.get_object("liststore_configure_wireless_network")
         self._store.set_sort_column_id(CONFIGURE_WIRELESS_COLUMN_SSID_STR, Gtk.SortType.ASCENDING)
