@@ -373,8 +373,6 @@ class NetworkControlBox(GObject.GObject):
         self.button_apply_hostname = self.builder.get_object("button_apply_hostname")
         self.button_apply_hostname.connect("clicked", self.on_apply_hostname)
 
-        self._wireless_dialog = SelectWirelessNetworksDialog(self.spoke.data, self.client)
-        self._wireless_dialog.initialize()
         self._conf_wireless_dialog = ConfigureWirelessNetworksDialog(self.spoke.data, self.client)
         self._conf_wireless_dialog.initialize()
 
@@ -495,9 +493,10 @@ class NetworkControlBox(GObject.GObject):
         device_name = dev_cfg.device_name
 
         # Run dialog
-        with self.spoke.main_window.enlightbox(self._wireless_dialog.window):
-            self._wireless_dialog.refresh(device_name)
-            self._wireless_dialog.run()
+        dialog = SelectWirelessNetworksDialog(self.spoke.data, self.client)
+        with self.spoke.main_window.enlightbox(dialog.window):
+            dialog.refresh(device_name)
+            dialog.run()
 
     def on_edit_connection(self, *args):
         dev_cfg = self.selected_dev_cfg()
@@ -1224,7 +1223,6 @@ class SelectWirelessNetworksDialog(GUIObject):
         self._nm_client = nm_client
         self._device_name = None
 
-    def initialize(self):
         self.window.set_size_request(500, 300)
         self._store = self.builder.get_object("liststore_wireless_network")
         self._store.set_sort_column_id(SELECT_WIRELESS_COLUMN_STRENGTH, Gtk.SortType.DESCENDING)
