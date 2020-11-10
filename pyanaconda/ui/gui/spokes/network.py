@@ -327,7 +327,7 @@ class NetworkControlBox(GObject.GObject):
                         ]
 
         do_not_show_in_refresh = ["heading_wireless_network_name",
-                                  "wireless_network_name_box"]
+                                  "label_wireless_network_name"]
         do_not_show_in_refresh += ["%s_%s_%s" % (widget, ty, value)
                                    for widget in ["heading", "label"]
                                    for ty in ["wired", "wireless"]
@@ -880,11 +880,11 @@ class NetworkControlBox(GObject.GObject):
 
         if state == NM.DeviceState.UNAVAILABLE:
             self.builder.get_object("heading_wireless_network_name").hide()
-            self.builder.get_object("wireless_network_name_box").hide()
+            self.builder.get_object("label_wireless_network_name").hide()
         else:
             self.builder.get_object("heading_wireless_network_name").show()
-            self.builder.get_object("wireless_network_name_box").show()
-        selected_network_label = self.builder.get_object("selected_wireless_network_label")
+            self.builder.get_object("label_wireless_network_name").show()
+        selected_network_label = self.builder.get_object("label_wireless_network_name")
         ssid_str = NM.utils_ssid_to_utf8(active_ssid)
         selected_network_label.set_label(ssid_str)
 
