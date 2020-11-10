@@ -1130,7 +1130,7 @@ class ConfigureWirelessNetworksDialog(GUIObject):
     uiFile = "spokes/network.glade"
 
     def __init__(self, data, nm_client):
-        super().__init__(self, data)
+        super().__init__(data)
         self._nm_client = nm_client
 
         self.window.set_size_request(500, 300)
