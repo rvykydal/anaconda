@@ -50,7 +50,6 @@ from pyanaconda.modules.network.constants import NM_CONNECTION_TYPE_WIFI, \
 
 from pyanaconda import network
 
-# Used for ascii_letters and hexdigits constants
 from uuid import uuid4
 
 from pyanaconda.anaconda_loggers import get_module_logger

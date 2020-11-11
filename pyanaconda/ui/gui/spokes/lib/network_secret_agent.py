@@ -26,6 +26,7 @@ from gi.repository import Gtk, NM
 from dasbus.typing import *  # pylint: disable=wildcard-import
 from dasbus.identifier import DBusObjectIdentifier
 from dasbus.server.interface import dbus_interface
+from string import hexdigits, ascii_letters   # pylint: disable=deprecated-module
 
 from pyanaconda.core.i18n import _, C_
 from pyanaconda.core.dbus import SystemBus
@@ -33,8 +34,6 @@ from pyanaconda.core.configuration.anaconda import conf
 from pyanaconda.modules.common.constants.services import NETWORK_MANAGER
 from pyanaconda.modules.common.constants.namespaces import NETWORK_MANAGER_NAMESPACE
 from pyanaconda.ui.gui import GUIObject
-
-import string  # pylint: disable=deprecated-module
 
 from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
@@ -240,7 +239,7 @@ class SecretAgent(object):
         value = secret['value']
         if len(value) == 64:
             # must be composed of hexadecimal digits only
-            return all(c in string.hexdigits for c in value)
+            return all(c in hexdigits for c in value)
         else:
             return 8 <= len(value) <= 63
 
@@ -248,9 +247,9 @@ class SecretAgent(object):
         value = secret['value']
         if secret['wep_key_type'] == NM.WepKeyType.KEY:
             if len(value) in (10, 26):
-                return all(c in string.hexdigits for c in value)
+                return all(c in hexdigits for c in value)
             elif len(value) in (5, 13):
-                return all(c in string.ascii_letters for c in value)
+                return all(c in ascii_letters for c in value)
             else:
                 return False
         elif secret['wep_key_type'] == NM.WepKeyType.PASSPHRASE:
