@@ -385,8 +385,8 @@ class NetworkControlBox(GObject.GObject):
         self.client.connect("notify::%s" % NM.CLIENT_STATE,
                             self.on_nm_state_changed)
 
-        #self.client.connect("connection-added", self.on_connection_added_or_removed)
-        #self.client.connect("connection-removed", self.on_connection_added_or_removed)
+        self.client.connect("connection-added", self.on_connection_added_or_removed)
+        self.client.connect("connection-removed", self.on_connection_added_or_removed)
 
         self._load_device_configurations()
         self._network_module.DeviceConfigurationChanged.connect(
@@ -472,15 +472,11 @@ class NetworkControlBox(GObject.GObject):
             self.refresh_ui()
 
     def on_connection_added_or_removed(self, client, connection):
-        #import pdb; pdb.set_trace()
-        #log.debug("RRRRRRRRRR on_connection_added_or_removed")
-        ##return
         dev_cfg = self.selected_dev_cfg()
         if not dev_cfg or not dev_cfg.device_name:
             return
-        if connection.get_connection_type() == NM_CONNECTION_TYPE_WIFI \
+        if connection.get_connection_type() == '802-11-wireless' \
                 and connection.get_interface_name() == dev_cfg.device_name:
-            #gtk_call_once(self._refresh_configure_wireless_button(dev_cfg.device_name))
             self._refresh_configure_wireless_button(dev_cfg.device_name)
 
     def on_select_wireless_clicked(self, *args):
