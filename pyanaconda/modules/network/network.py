@@ -61,7 +61,7 @@ class NetworkService(KickstartService):
         self._firewall_module = FirewallModule()
 
         self.hostname_changed = Signal()
-        self._hostname = None
+        self._hostname = ""
 
         self.current_hostname_changed = Signal()
         self._hostname_service_proxy = None
