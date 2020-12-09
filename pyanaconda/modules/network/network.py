@@ -149,8 +149,9 @@ class NetworkService(KickstartService):
 
         data.network.network = device_data
 
-        hostname_data = data.NetworkData(hostname=self.hostname, bootProto="")
-        update_network_hostname_data(data.network.network, hostname_data)
+        if self.hostname:
+            hostname_data = data.NetworkData(hostname=self.hostname, bootProto="")
+            update_network_hostname_data(data.network.network, hostname_data)
 
         # firewall
         self._firewall_module.setup_kickstart(data)
