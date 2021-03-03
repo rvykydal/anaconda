@@ -19,6 +19,7 @@ import copy
 
 from pyanaconda.modules.common.task import Task
 from pyanaconda.anaconda_loggers import get_module_logger
+from pyanaconda.core.glib import create_new_context
 from pyanaconda.modules.network.network_interface import NetworkInitializationTaskInterface
 from pyanaconda.modules.network.nm_client import get_device_name_from_network_data, \
     update_connection_from_ksdata, add_connection_from_ksdata, bound_hwaddr_of_device, \
@@ -78,9 +79,13 @@ class ApplyKickstartTask(Task):
             log.debug("%s: No kickstart data.", self.name)
             return applied_devices
 
+        mainctx = create_new_context()
+        mainctx.push_thread_default()
+
         self._nm_client = get_new_nm_client()
         if not self._nm_client:
             log.debug("%s: No NetworkManager available.", self.name)
+            mainctx.pop_thread_default()
             return applied_devices
 
         for network_data in self._network_data:
@@ -126,6 +131,8 @@ class ApplyKickstartTask(Task):
                     activate=network_data.activate,
                     ifname_option_values=self._ifname_option_values
                 )
+
+        mainctx.pop_thread_default()
 
         return applied_devices
 
@@ -213,9 +220,13 @@ class DumpMissingConfigFilesTask(Task):
         """
         new_configs = []
 
+        mainctx = create_new_context()
+        mainctx.push_thread_default()
+
         self._nm_client = get_new_nm_client()
         if not self._nm_client:
             log.debug("%s: No NetworkManager available.", self.name)
+            mainctx.pop_thread_default()
             return new_configs
 
         dumped_device_types = supported_wired_device_types + virtual_device_types
@@ -302,6 +313,8 @@ class DumpMissingConfigFilesTask(Task):
                 )
 
             new_configs.append(iface)
+
+        mainctx.pop_thread_default()
 
         return new_configs
 
