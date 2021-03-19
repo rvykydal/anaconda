@@ -226,9 +226,11 @@ class NTPconfigDialog(GUIObject, GUIDialogInputCheckHandler):
         self._serverCheck = self.add_check(self._serverEntry, self._validateServer)
         self._serverCheck.update_check_status()
 
+        log.debug("RVDBG in NTPConfigDialog.initialize caling _initialize_store_from_config")
         self._initialize_store_from_config()
 
     def _initialize_store_from_config(self):
+        log.debug("RVDBG in _initialize_store_from_config CLEARING THE STORE")
         self._serversStore.clear()
 
         kickstart_ntp_servers = self._timezone_module.NTPServers
@@ -243,8 +245,10 @@ class NTPconfigDialog(GUIObject, GUIDialogInputCheckHandler):
                 return
 
         for pool in pools:
+            log.debug("RVDBG in _initialize_store_from_config calling __add_server")
             self._add_server(pool, True)
         for server in servers:
+            log.debug("RVDBG in _initialize_store_from_config calling __add_server")
             self._add_server(server, False)
 
     def _validateServer(self, inputcheck):
@@ -262,12 +266,15 @@ class NTPconfigDialog(GUIObject, GUIDialogInputCheckHandler):
             return InputCheck.CHECK_OK
 
     def refresh(self):
+        log.debug("RVDBG in NTPConfigDialog.refresh calling _initialize_store_from_config")
         self._initialize_store_from_config()
         self._serverEntry.grab_focus()
 
     def refresh_servers_state(self):
+        log.debug("RVDBG in refresh_servers_state")
         itr = self._serversStore.get_iter_first()
         while itr:
+            log.debug("RVDBG in refresh_servers_state calling _refresh_server_working for %s", itr)
             self._refresh_server_working(itr)
             itr = self._serversStore.iter_next(itr)
 
@@ -316,24 +323,34 @@ class NTPconfigDialog(GUIObject, GUIDialogInputCheckHandler):
             store.set_value(itr, column, value)
 
         orig_hostname = self._serversStore[itr][SERVER_HOSTNAME]
+        log.debug("RVDBG in _refresh_server_working %s before ntp_server_working check", itr)
         server_working = ntp.ntp_server_working(self._serversStore[itr][SERVER_HOSTNAME])
+        log.debug("RVDBG in _refresh_server_working %s after ntp_server_working check", itr)
 
         #do not let dialog change epoch while we are modifying data
+        log.debug("RVDBG in _refresh_server_working %s acquire lock", itr)
         self._epoch_lock.acquire()
+        log.debug("RVDBG in _refresh_server_working %s lock acquired", itr)
 
         #check if we are in the same epoch as the dialog (and the serversStore)
         #and if the server wasn't changed meanwhile
-        if epoch_started == self._epoch:
-            actual_hostname = self._serversStore[itr][SERVER_HOSTNAME]
+        if epoch_started == self._epoch and self._serversStore:
+            if self._serversStore.iter_is_valid(itr):
+                log.debug("RVDBG in _refresh_server_working %s is valid", itr)
+                actual_hostname = self._serversStore[itr][SERVER_HOSTNAME]
 
-            if orig_hostname == actual_hostname:
-                if server_working:
-                    set_store_value((self._serversStore,
-                                     itr, SERVER_WORKING, constants.NTP_SERVER_OK))
-                else:
-                    set_store_value((self._serversStore,
-                                     itr, SERVER_WORKING, constants.NTP_SERVER_NOK))
+                if orig_hostname == actual_hostname:
+                    if server_working:
+                        set_store_value((self._serversStore,
+                                        itr, SERVER_WORKING, constants.NTP_SERVER_OK))
+                    else:
+                        set_store_value((self._serversStore,
+                                        itr, SERVER_WORKING, constants.NTP_SERVER_NOK))
+            else:
+                log.debug("RVDBG in _refresh_server_working %s is not valid - CRASH ========================= ", itr)
+        log.debug("RVDBG in _refresh_server_working %s release lock", itr)
         self._epoch_lock.release()
+        log.debug("RVDBG in _refresh_server_working %s lock released", itr)
 
     @async_action_nowait
     def _refresh_server_working(self, itr):
@@ -356,6 +373,7 @@ class NTPconfigDialog(GUIObject, GUIDialogInputCheckHandler):
         itr = self._serversStore.append([server, pool, constants.NTP_SERVER_QUERY, True])
 
         #do not block UI while starting thread (may take some time)
+        log.debug("RVDBG in _add_server calling _refresh_server_working %s", itr)
         self._refresh_server_working(itr)
 
     def on_entry_activated(self, entry, *args):
@@ -628,6 +646,7 @@ class DatetimeSpoke(FirstbootSpokeMixIn, NormalSpoke):
         return True
 
     def refresh(self):
+        log.debug("RVDBG in DateTimeSpoke.refresh")
         self._shown = True
 
         # update the displayed time
@@ -648,6 +667,7 @@ class DatetimeSpoke(FirstbootSpokeMixIn, NormalSpoke):
             self._show_no_network_warning()
         else:
             self.clear_info()
+            log.debug("RVDBG in DateTimeSpoke.refresh calling refresh_servers_state in main thread")
             gtk_call_once(self._config_dialog.refresh_servers_state)
 
         if conf.system.can_set_time_synchronization:
@@ -1170,6 +1190,7 @@ class DatetimeSpoke(FirstbootSpokeMixIn, NormalSpoke):
             self.clear_info()
 
     def on_ntp_config_clicked(self, *args):
+
         self._config_dialog.refresh()
 
         with self.main_window.enlightbox(self._config_dialog.window):
