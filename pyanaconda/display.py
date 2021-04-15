@@ -182,9 +182,10 @@ def do_startup_x11_actions():
     else:
         xdg_data_dirs = datadir + '/window-manager:/usr/share'
 
-    childproc = util.startProgram(["metacity", "--display", ":1", "--sm-disable"],
+    childproc = util.startProgram(["gnome-kiosk", "--display", ":1", "--sm-disable", "--x11"],
                                   env_add={'XDG_DATA_DIRS': xdg_data_dirs})
-    WatchProcesses.watch_process(childproc, "metacity")
+                                  #env_add={'XDG_DATA_DIRS': xdg_data_dirs, 'XDG_SESSION_TYPE':"x11"})
+    WatchProcesses.watch_process(childproc, "gnome-kiosk")
 
 
 def set_x_resolution(runres):
