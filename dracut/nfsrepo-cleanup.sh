@@ -7,7 +7,7 @@ if getargbool 0 rd.live.ram -d -y live_ram; then
         if [ "$mnt" = "/run/install/repo" ]; then
             if [ "$fs" = "nfs" ] || [ "$fs" = "nfs4" ]; then
                 umount /run/install/repo
-		break
+                break
             fi
         fi
     done < /proc/mounts
