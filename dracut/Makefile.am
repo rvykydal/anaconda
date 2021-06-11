@@ -51,7 +51,7 @@ dist_dracut_SCRIPTS = module-setup.sh \
                       find-net-intfs-by-driver \
                       anaconda-ifdown \
                       driver_updates.py \
-		      nfsrepo-cleanup.sh
+                      nfsrepo-cleanup.sh
 
 dist_dracut_DATA = driver-updates@.service
 
