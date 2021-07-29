@@ -10,5 +10,13 @@ if getargbool 0 rd.live.ram -d -y live_ram; then
                 break
             fi
         fi
+        # inst.repo=nfs://dvd.iso case
+        if [ "$mnt" = "/run/install/isodir" ]; then
+            if [ "$fs" = "nfs" ] || [ "$fs" = "nfs4" ]; then
+                umount /run/install/repo
+                umount /run/install/isodir
+                break
+            fi
+        fi
     done < /proc/mounts
 fi
