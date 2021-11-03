@@ -418,6 +418,8 @@ def create_connections_from_ksdata(nm_client, network_data, device_name, ifname_
             s390cfg = get_s390_settings(device_name)
             _update_wired_connection_with_s390_settings(con, s390cfg)
 
+    update_connection_wired_settings_from_ksdata(con, network_data)
+
     connections.insert(0, (con, device_to_activate))
 
     return connections
@@ -577,6 +579,8 @@ def update_connection_from_ksdata(nm_client, connection, network_data, device_na
     # IP configuration
     update_connection_ip_settings_from_ksdata(connection, network_data)
 
+    update_connection_wired_settings_from_ksdata(connection, network_data)
+
     s_con = connection.get_setting_connection()
     s_con.set_property(NM.SETTING_CONNECTION_AUTOCONNECT, network_data.onboot)
 
@@ -653,6 +657,23 @@ def update_connection_ip_settings_from_ksdata(connection, network_data):
                 s_ip4.add_dns(ns)
             else:
                 log.error("IP address %s is not valid", ns)
+
+
+def update_connection_wired_settings_from_ksdata(connection, network_data):
+    """Update NM connection wired settings from kickstart in place.
+
+    :param connection: existing NetworkManager connection to be updated
+    :type connection: NM.RemoteConnection
+    :param network_data: kickstart configuation to be applied to the connection
+    :type network_data: pykickstart NetworkData
+    """
+    # mtu can be configured also on virtual device connections
+    if network_data.mtu:
+        s_wired = connection.get_setting_wired()
+        if not s_wired:
+            s_wired = NM.SettingWired.new()
+            connection.add_setting(s_wired)
+        s_wired.props.mtu = int(network_data.mtu)
 
 
 def bind_settings_to_mac(nm_client, s_connection, s_wired, device_name=None, bind_exclusively=True):
