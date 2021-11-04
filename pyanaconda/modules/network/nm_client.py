@@ -667,13 +667,17 @@ def update_connection_wired_settings_from_ksdata(connection, network_data):
     :param network_data: kickstart configuation to be applied to the connection
     :type network_data: pykickstart NetworkData
     """
-    # mtu can be configured also on virtual device connections
     if network_data.mtu:
-        s_wired = connection.get_setting_wired()
-        if not s_wired:
-            s_wired = NM.SettingWired.new()
-            connection.add_setting(s_wired)
-        s_wired.props.mtu = int(network_data.mtu)
+        try:
+            mtu = int(network_data.mtu)
+        except ValueError as e:
+            log.error("Value of network --mtu option is not valid: %s", network_data.mtu)
+        else:
+            s_wired = connection.get_setting_wired()
+            if not s_wired:
+                s_wired = NM.SettingWired.new()
+                connection.add_setting(s_wired)
+            s_wired.props.mtu = mtu
 
 
 def bind_settings_to_mac(nm_client, s_connection, s_wired, device_name=None, bind_exclusively=True):
