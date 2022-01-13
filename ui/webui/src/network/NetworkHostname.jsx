@@ -64,11 +64,7 @@ const NetworkConfigurations = () => {
     useEvent(networkProxy, 'changed', (event, data) => {
         networkProxy.GetDeviceConfigurations().then(ret => {
             console.info(ret);
-            setDeviceConfigurations(ret.map((devCfg) =>
-                <SimpleListItem key={devCfg['device-name'].v}>
-                    {devCfg['device-name'].v}
-                </SimpleListItem>
-            ));
+            setDeviceConfigurations(ret);
         });
     });
 
@@ -79,7 +75,10 @@ const NetworkConfigurations = () => {
             </CardHeader>
             <CardBody>
                 <SimpleList>
-                    {deviceConfigurations}
+                    {deviceConfigurations && deviceConfigurations.map((devCfg) =>
+                        <SimpleListItem key={devCfg['device-name'].v}>
+                            {devCfg['device-name'].v}
+                        </SimpleListItem>)}
                 </SimpleList>
             </CardBody>
         </Card>
