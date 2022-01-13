@@ -15,13 +15,16 @@
  * along with This program; If not, see <http://www.gnu.org/licenses/>.
  */
 import cockpit from 'cockpit';
-import React from 'react';
+import React, { useContext } from 'react';
 
 import {
-    PageSection
+    Card, CardBody, CardHeader, CardTitle,
+    PageSection,
+    Form
 } from '@patternfly/react-core';
 
-import { Header } from '../Common.jsx';
+import { AddressContext, Header } from '../Common.jsx';
+import { useObject } from 'hooks';
 
 export const NetworkHostname = () => {
     const onDoneClicked = () => {
@@ -35,8 +38,37 @@ export const NetworkHostname = () => {
               title='Network & Host Name'
             />
             <PageSection>
-                Not implemented
+                <Form isHorizontal>
+                    <NetworkConfigurations />
+                </Form>
             </PageSection>
         </>
+    );
+};
+
+const NetworkConfigurations = () => {
+    const address = useContext(AddressContext);
+
+    const networkProxy = useObject(() => {
+        const client = cockpit.dbus('org.fedoraproject.Anaconda.Modules.Network', { superuser: 'try', bus: 'none', address });
+        const proxy = client.proxy(
+            'org.fedoraproject.Anaconda.Modules.Network',
+            '/org/fedoraproject/Anaconda/Modules/Network',
+        );
+
+        return proxy;
+    }, null, [address]);
+
+    console.info(networkProxy.GetSupportedDevices());
+
+    return (
+        <Card>
+            <CardHeader>
+                <CardTitle>Network Devices</CardTitle>
+            </CardHeader>
+            <CardBody>
+                Nothing here
+            </CardBody>
+        </Card>
     );
 };
