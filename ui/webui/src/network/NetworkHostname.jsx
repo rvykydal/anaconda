@@ -15,16 +15,17 @@
  * along with This program; If not, see <http://www.gnu.org/licenses/>.
  */
 import cockpit from 'cockpit';
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 
 import {
     Card, CardBody, CardHeader, CardTitle,
     PageSection,
-    Form
+    Form,
+    SimpleList, SimpleListItem
 } from '@patternfly/react-core';
 
 import { AddressContext, Header } from '../Common.jsx';
-import { useObject } from 'hooks';
+import { useEvent, useObject } from 'hooks';
 
 export const NetworkHostname = () => {
     const onDoneClicked = () => {
@@ -47,6 +48,7 @@ export const NetworkHostname = () => {
 };
 
 const NetworkConfigurations = () => {
+    const [deviceConfigurations, setDeviceConfigurations] = useState();
     const address = useContext(AddressContext);
 
     const networkProxy = useObject(() => {
@@ -59,7 +61,16 @@ const NetworkConfigurations = () => {
         return proxy;
     }, null, [address]);
 
-    console.info(networkProxy.GetSupportedDevices());
+    useEvent(networkProxy, 'changed', (event, data) => {
+        networkProxy.GetDeviceConfigurations().then(ret => {
+            console.info(ret);
+            setDeviceConfigurations(ret.map((devCfg) =>
+                <SimpleListItem key={devCfg['device-name'].v}>
+                    {devCfg['device-name'].v}
+                </SimpleListItem>
+            ));
+        });
+    });
 
     return (
         <Card>
@@ -67,7 +78,9 @@ const NetworkConfigurations = () => {
                 <CardTitle>Network Devices</CardTitle>
             </CardHeader>
             <CardBody>
-                Nothing here
+                <SimpleList>
+                    {deviceConfigurations}
+                </SimpleList>
             </CardBody>
         </Card>
     );
