@@ -254,12 +254,25 @@ class DumpMissingConfigFilesTask(Task):
 
             has_initramfs_con = any(self._is_initramfs_connection(con, iface) for con in cons)
             if has_initramfs_con:
-                log.debug("%s: device %s has initramfs connection", self.name, iface)
+                log.debug("%s: device %s has applicable initramfs connection", self.name, iface)
                 if not con and n_cons == 1:
                     # Try to clone the persistent connection for the device
                     # from the connection which should be a generic (not bound
                     # to iface) connection created by NM in initramfs
-                    con = clone_connection_sync(self._nm_client, cons[0], con_id=iface)
+                    initramfs_con = cons[0]
+                    ip4cfg = initramfs_con.get_setting_ip4_config()
+                    if ip4cfg and ip4cfg.get_method() == NM.SETTING_IP4_CONFIG_METHOD_MANUAL:
+                        ac = device.get_active_connection()
+                        if ac and initramfs_con == ac.get_connection():
+                            con = clone_connection_sync(self._nm_client, initramfs_con, con_id=iface)
+                            # Remove the initramfs unbound static connection so
+                            # that it can't be activated on another device
+                            log.debug("deleting unbound static initramfs connection %s", initramfs_con.get_uuid())
+                            initramfs_con.delete()
+                        else:
+                            log.debug("%s can't be cloned to persistent connection", initramfs_con.get_uuid())
+                    else:
+                        con = clone_connection_sync(self._nm_client, initramfs_con, con_id=iface)
 
             if con:
                 self._update_connection(con, iface)
