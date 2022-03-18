@@ -430,6 +430,18 @@ class DumpMissingIfcfgFilesTask(Task):
             s_ipv6.set_property(NM.SETTING_IP6_CONFIG_ADDR_GEN_MODE,
                                 NM.SettingIP6ConfigAddrGenMode.EUI64)
 
+    def _is_cloneable(self, con, device):
+        cloneable = True
+        # Connection with static config is cloneable only if it is the
+        # connection active on the device (the device was chosen in initramfs)
+        ip4cfg = con.get_setting_ip4_config()
+        if ip4cfg and ip4cfg.get_method() == NM.SETTING_IP4_CONFIG_METHOD_MANUAL:
+            cloneable = False
+            ac = device.get_active_connection()
+            if ac and con == ac.get_connection():
+                cloneable = True
+        return cloneable
+
     @guard_by_system_configuration(return_value=[])
     def run(self):
         """Run dumping of missing ifcfg files.
@@ -472,13 +484,17 @@ class DumpMissingIfcfgFilesTask(Task):
 
             has_initramfs_con = any(self._is_initramfs_connection(con, iface) for con in cons)
             if has_initramfs_con:
-                log.debug("%s: device %s has initramfs connection", self.name, iface)
+                log.debug("%s: device %s has applicable initramfs connection", self.name, iface)
                 if not con and n_cons == 1:
                     # Try to clone the persistent connection for the device
                     # from the connection which should be a generic (not bound
                     # to iface) connection created by NM in initramfs
-                    con = clone_connection_sync(self._nm_client, cons[0], con_id=iface)
-
+                    initramfs_con = cons[0]
+                    if self._is_cloneable(initramfs_con, device):
+                        con = clone_connection_sync(self._nm_client, initramfs_con, con_id=iface)
+                    else:
+                        log.debug("%s can't be cloned to persistent connection",
+                                  initramfs_con.get_uuid())
 
             if not con:
                 log.debug("%s: none of the connections can be dumped as persistent",
