@@ -130,7 +130,7 @@ jobs:
       - name: Check out kickstart-tests
         uses: actions/checkout@v2
         with:
-          repository: rhinstaller/kickstart-tests
+          repository: rvykydal/kickstart-tests
           path: kickstart-tests
 
       - name: Ensure http proxy is running
