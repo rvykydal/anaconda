@@ -295,7 +295,7 @@ class DumpMissingConfigFilesTask(Task):
                     continue
                 log.debug("%s: creating default connection for %s", self.name, iface)
                 network_data = copy.deepcopy(self._default_network_data)
-                if has_initramfs_con:
+                if has_initramfs_con and not device_is_slave:
                     network_data.onboot = True
                 add_connection_from_ksdata(
                     self._nm_client,
