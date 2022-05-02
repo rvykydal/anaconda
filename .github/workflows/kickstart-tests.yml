@@ -134,6 +134,7 @@ jobs:
         with:
           repository: rvykydal/kickstart-tests
           path: kickstart-tests
+          ref: kickstart-tests-update-results-parsing
 
       - name: Generate test cases
         working-directory: ./kickstart-tests
