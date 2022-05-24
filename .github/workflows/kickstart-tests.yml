@@ -1,4 +1,4 @@
-# Run kickstart tests in a PR triggered by a "/kickstart-test <launch args>" comment from an organization member.
+# Run kickstart tests in a PR triggered by a "/kickstart-test <launch args>" comment from an organization member.trigger
 name: kickstart-tests
 on:
   issue_comment:
