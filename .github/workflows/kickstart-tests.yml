@@ -231,6 +231,11 @@ jobs:
             --testcase-query '${{ steps.generate_query.outputs.query }}' \
             run_event '{"type":"github.pr","bootIso":{"x86_64":"file://${{ github.workspace }}/images/boot.iso"},"kstestParams":{"platform":"${{ needs.pr-info.outputs.platform }}"}}'
 
+      # Needed so that next job is able to clean the path
+      - name: Fix the permissions caused by running with sudo
+        run:
+          sudo chown -R github:github .
+
       - name: Collect anaconda logs
         if: always()
         uses: actions/upload-artifact@v2
