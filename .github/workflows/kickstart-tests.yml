@@ -162,62 +162,62 @@ jobs:
       - name: Ensure http proxy is running
         run: sudo kickstart-tests/containers/squid.sh start
 
-      # This is really fast, but does not catch file removals or dracut changes
-      # maybe this becomes opt-in via a magic comment for efficiency reasons?
-      # if you use this, add `--updates ../updates.img` to the launch command line below
-      #- name: Build updates.img
-      #  run: |
-      #    scripts/makeupdates
-      #    gzip -cd updates.img | cpio -tv
-
-      - name: Update container images used here
-        run: |
-          sudo podman pull quay.io/rhinstaller/kstest-runner:latest
-
-      - name: Build anaconda-iso-creator container image
-        run: |
-          # set static tag to avoid complications when looking what tag is used
-          sudo make -f ./Makefile.am anaconda-iso-creator-build CI_TAG=$CONTAINER_TAG
-
-      - name: Build anaconda-rpm container (for RPM build)
-        run: |
-          # set static tag to avoid complications when looking what tag is used
-          make -f ./Makefile.am anaconda-rpm-build CI_TAG=$CONTAINER_TAG
-
-      - name: Build Anaconda RPM files
-        run: |
-          # output of the build will be stored in ./result/build/01-rpm-build/*.rpm
-          make -f ./Makefile.am container-rpms-scratch CI_TAG=$CONTAINER_TAG
-          mkdir -p ./kickstart-tests/data/additional_repo/
-          cp -av ./result/build/01-rpm-build/*.rpm ./kickstart-tests/data/additional_repo/
-
-      - name: Prepare environment for lorax run
-        run: |
-          mkdir images
-          # We have to pre-create loop devices because they are not namespaced in kernel so
-          # podman can't access newly created ones. That caused failures of tests when runners
-          # were rebooted.
-          sudo mknod -m 0660 /dev/loop0 b 7 0  2> /dev/null || true
-          sudo mknod -m 0660 /dev/loop1 b 7 1  2> /dev/null || true
-
-      - name: Build boot.iso
-        run: |
-          # /var/tmp tmpfs speeds up lorax and avoids https://bugzilla.redhat.com/show_bug.cgi?id=1906364
-          sudo podman run -i --rm --privileged \
-            --tmpfs /var/tmp:rw,mode=1777 \
-            -v `pwd`/kickstart-tests/data/additional_repo:/anaconda-rpms:ro \
-            -v `pwd`/images:/images:z \
-            $ISO_BUILD_CONTAINER_NAME:$CONTAINER_TAG
-
-      - name: Clean up after lorax
-        if: always()
-        run: |
-          sudo losetup -d /dev/loop0 2> /dev/null || true
-          sudo losetup -d /dev/loop1 2> /dev/null || true
-
-          # remove container images together with the container
-          sudo podman rmi -f $ISO_BUILD_CONTAINER_NAME:$CONTAINER_TAG || true
-          sudo podman rmi -f $RPM_BUILD_CONTAINER_NAME:$CONTAINER_TAG || true
+        #      # This is really fast, but does not catch file removals or dracut changes
+        #      # maybe this becomes opt-in via a magic comment for efficiency reasons?
+        #      # if you use this, add `--updates ../updates.img` to the launch command line below
+        #      #- name: Build updates.img
+        #      #  run: |
+        #      #    scripts/makeupdates
+        #      #    gzip -cd updates.img | cpio -tv
+        #
+        #      - name: Update container images used here
+        #        run: |
+        #          sudo podman pull quay.io/rhinstaller/kstest-runner:latest
+        #
+        #      - name: Build anaconda-iso-creator container image
+        #        run: |
+        #          # set static tag to avoid complications when looking what tag is used
+        #          sudo make -f ./Makefile.am anaconda-iso-creator-build CI_TAG=$CONTAINER_TAG
+        #
+        #      - name: Build anaconda-rpm container (for RPM build)
+        #        run: |
+        #          # set static tag to avoid complications when looking what tag is used
+        #          make -f ./Makefile.am anaconda-rpm-build CI_TAG=$CONTAINER_TAG
+        #
+        #      - name: Build Anaconda RPM files
+        #        run: |
+        #          # output of the build will be stored in ./result/build/01-rpm-build/*.rpm
+        #          make -f ./Makefile.am container-rpms-scratch CI_TAG=$CONTAINER_TAG
+        #          mkdir -p ./kickstart-tests/data/additional_repo/
+        #          cp -av ./result/build/01-rpm-build/*.rpm ./kickstart-tests/data/additional_repo/
+        #
+        #      - name: Prepare environment for lorax run
+        #        run: |
+        #          mkdir images
+        #          # We have to pre-create loop devices because they are not namespaced in kernel so
+        #          # podman can't access newly created ones. That caused failures of tests when runners
+        #          # were rebooted.
+        #          sudo mknod -m 0660 /dev/loop0 b 7 0  2> /dev/null || true
+        #          sudo mknod -m 0660 /dev/loop1 b 7 1  2> /dev/null || true
+        #
+        #      - name: Build boot.iso
+        #        run: |
+        #          # /var/tmp tmpfs speeds up lorax and avoids https://bugzilla.redhat.com/show_bug.cgi?id=1906364
+        #          sudo podman run -i --rm --privileged \
+        #            --tmpfs /var/tmp:rw,mode=1777 \
+        #            -v `pwd`/kickstart-tests/data/additional_repo:/anaconda-rpms:ro \
+        #            -v `pwd`/images:/images:z \
+        #            $ISO_BUILD_CONTAINER_NAME:$CONTAINER_TAG
+        #
+        #      - name: Clean up after lorax
+        #        if: always()
+        #        run: |
+        #          sudo losetup -d /dev/loop0 2> /dev/null || true
+        #          sudo losetup -d /dev/loop1 2> /dev/null || true
+        #
+        #          # remove container images together with the container
+        #          sudo podman rmi -f $ISO_BUILD_CONTAINER_NAME:$CONTAINER_TAG || true
+        #          sudo podman rmi -f $RPM_BUILD_CONTAINER_NAME:$CONTAINER_TAG || true
 
       - name: Generate query arguments for "${{ needs.pr-info.outputs.launch_args }}"
         id: generate_query
@@ -257,7 +257,7 @@ jobs:
             --settings settings.ini \
             --override workflows.dry_run=False \
             --testcase-query '${{ steps.generate_query.outputs.query }}' \
-            run_event '{"type":"github.pr.anaconda","bootIso":{"x86_64":"file://${{ github.workspace }}/images/boot.iso"},"kstestParams":{"platform":"${{ needs.pr-info.outputs.platform }}"}}'
+            run_event '{"type":"github.pr.anaconda","bootIso":{"x86_64":"http://download.fedoraproject.org/pub/fedora/linux/development/rawhide/Server/x86_64/os/images/boot.iso"},"kstestParams":{"platform":"${{ needs.pr-info.outputs.platform }}"}}'
 
       # Needed so that other jobs are able to clean the working dir
       # FIXME: we should investigate running permian/launch sudo-less
