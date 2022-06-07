@@ -257,7 +257,7 @@ jobs:
             --settings settings.ini \
             --override workflows.dry_run=False \
             --testcase-query '${{ steps.generate_query.outputs.query }}' \
-            run_event '{"type":"everything","everything_testplan":{"configurations":[{"architecture":"x86_64"}],"point_person":"rvykydal@redhat.com","description":"Kickstart tests run on a pull request comment","reporting":[{"type":"github-pr","data":{"pr-check-name":"${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}","pr-check-summary":"Kickstart tests run on a pull request comment"}}]},"bootIso":{"x86_64":"http://download.fedoraproject.org/pub/fedora/linux/development/rawhide/Server/x86_64/os/images/boot.iso"},"kstestParams":{"platform":"${{ needs.pr-info.outputs.platform }}"}}'
+            run_event '{"type":"everything","everything_testplan":{"configurations":[{"architecture":"x86_64"}],"point_person":"rvykydal@redhat.com","reporting":[{"type":"github-pr","data":{"pr-check-name":"${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}","pr-check-summary":"Kickstart tests run on a pull request comment"}}]},"bootIso":{"x86_64":"http://download.fedoraproject.org/pub/fedora/linux/development/rawhide/Server/x86_64/os/images/boot.iso"},"kstestParams":{"platform":"${{ needs.pr-info.outputs.platform }}"}}'
 
       # Needed so that other jobs are able to clean the working dir
       # FIXME: we should investigate running permian/launch sudo-less
