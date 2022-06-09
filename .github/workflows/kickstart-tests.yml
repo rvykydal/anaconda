@@ -190,7 +190,6 @@ jobs:
           cp -av ./result/build/01-rpm-build/*.rpm ${{ github.workspace }}/kickstart-tests/data/additional_repo/
 
       - name: Prepare environment for lorax run
-        working-directory: ./anaconda
         run: |
           mkdir images
           # We have to pre-create loop devices because they are not namespaced in kernel so
@@ -200,7 +199,6 @@ jobs:
           sudo mknod -m 0660 /dev/loop1 b 7 1  2> /dev/null || true
 
       - name: Build boot.iso
-        working-directory: ./anaconda
         run: |
           # /var/tmp tmpfs speeds up lorax and avoids https://bugzilla.redhat.com/show_bug.cgi?id=1906364
           sudo podman run -i --rm --privileged \
