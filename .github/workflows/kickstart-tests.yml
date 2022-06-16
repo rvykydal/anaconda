@@ -96,17 +96,42 @@ jobs:
        SKIP_KS_TESTS: ${{ needs.pr-info.outputs.skip_tests }}
        TEST_JOBS: 16
     steps:
+      #      # we post statuses manually as this does not run from a pull_request event
+      #      # https://developer.github.com/v3/repos/statuses/#create-a-status
+      #      - name: Create in-progress status
+      #        uses: octokit/request-action@v2.x
+      #        with:
+      #          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+      #          context: '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
+      #          state: pending
+      #          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+      #        env:
+      #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #
       # we post statuses manually as this does not run from a pull_request event
-      # https://developer.github.com/v3/repos/statuses/#create-a-status
-      - name: Create in-progress status
+      # https://docs.github.com/en/rest/checks/runs#create-a-check-run
+      - name: Create a kickstart-test check
         uses: octokit/request-action@v2.x
+        id: create_check
         with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
-          context: '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
-          state: pending
-          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          route: 'POST /repos/${{ github.repository }}/check-runs'
+          name: '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
+          status: 'in_progress'
+          output:
+            title: '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
+            summary: 'Kickstart tests run on a pull request comment'
+            text: 'No results available yet'
+          head_sha: ${{ needs.pr-info.outputs.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show the check id
+        run:
+          echo "{{ fromJson(steps.create_check.outputs.data).id }}"
+
+      - name: Fail
+        run: |
+          exit 112
 
       # self-hosted runners don't do this automatically; also useful to keep stuff around for debugging
       # need to run sudo as the launch script and the container create root/other user owned files
@@ -287,24 +312,24 @@ jobs:
             permian/permian.log
 
 
-      # Permian hides the exit code of launcher
-      - name: Pass the launch script exit code
-        working-directory: ./permian
-        run: |
-          rc=$( awk '/Runner return code: /{ print $4 }' permian.log)
-          if [ -n "$rc" ]; then
-            exit $rc
-          else
-            exit 111
-          fi
-
-      - name: Set result status
-        if: always()
-        uses: octokit/request-action@v2.x
-        with:
-          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
-          context: '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
-          state: ${{ job.status }}
-          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            #      # Permian hides the exit code of launcher
+            #      - name: Pass the launch script exit code
+            #        working-directory: ./permian
+            #        run: |
+            #          rc=$( awk '/Runner return code: /{ print $4 }' permian.log)
+            #          if [ -n "$rc" ]; then
+            #            exit $rc
+            #          else
+            #            exit 111
+            #          fi
+            #
+          #      - name: Set result status
+          #        if: always()
+          #        uses: octokit/request-action@v2.x
+          #        with:
+          #          route: 'POST /repos/${{ github.repository }}/statuses/${{ needs.pr-info.outputs.sha }}'
+          #          context: '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
+          #          state: ${{ job.status }}
+          #          target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+          #        env:
+          #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
