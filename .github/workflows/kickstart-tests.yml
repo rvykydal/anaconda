@@ -122,7 +122,8 @@ jobs:
 
       - name: Show the suite
         run:
-          echo "${{ steps.create_check.outputs.data }}"
+          echo "${{ steps.create_suite.outputs.data }}"
+          echo "${{ github }}"
           #          echo "${{ steps.get_suites.outputs.data }}"
           #echo "${{ steps.get_the_suite.outputs.data }}"
 
@@ -134,6 +135,7 @@ jobs:
           route: POST /repos/${{ github.repository }}/check-runs
           name: 'bla ${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
           status: 'in_progress'
+
           #output: {"title":'${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}',"summary":'Kickstart tests run on a pull request comment',"text":'No results available yet'}
           head_sha: ${{ needs.pr-info.outputs.sha }}
         env:
