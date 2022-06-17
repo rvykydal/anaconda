@@ -127,6 +127,16 @@ jobs:
           echo "${{ fromJson(steps.create_check.outputs.data).id }}"
           echo "${{ steps.create_check.outputs.data }}"
 
+      - name: DBG Update status of a kickstart-test check in case of failue
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}'
+          status: 'completed'
+          # TODO failure?
+          conclusion: 'neutral'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Fail
         run: |
           exit 112
