@@ -127,6 +127,7 @@ jobs:
         id: get_suites
         with:
           route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
+          check_name: "unit-tests"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
