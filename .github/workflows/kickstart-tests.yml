@@ -309,7 +309,7 @@ jobs:
             permian/permian.log
 
       - name: Update status of a kickstart-test check in case of failue
-        if: ${{ job.status }} != 'success'
+        if: always() && job.status != 'success'
         uses: octokit/request-action@v2.x
         with:
           route: 'POST /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}'
