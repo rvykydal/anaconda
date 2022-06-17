@@ -125,7 +125,7 @@ jobs:
       - name: Show the check id
         run:
           echo "${{ fromJson(steps.create_check.outputs.data).id }}"
-          echo "${{ fromJson(steps.create_check.outputs.data) }}"
+          echo "${{ steps.create_check.outputs.data }}"
 
       - name: Fail
         run: |
