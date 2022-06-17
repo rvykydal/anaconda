@@ -114,7 +114,7 @@ jobs:
         uses: octokit/request-action@v2.x
         id: create_check
         with:
-          route: 'POST /repos/${{ github.repository }}/check-runs'
+          route: POST /repos/${{ github.repository }}/check-runs
           name: 'bla ${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
           status: 'in_progress'
           #output: {"title":'${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}',"summary":'Kickstart tests run on a pull request comment',"text":'No results available yet'}
@@ -127,10 +127,22 @@ jobs:
           echo "${{ fromJson(steps.create_check.outputs.data).id }}"
           echo "${{ steps.create_check.outputs.data }}"
 
+      - name: DBG Get the new check
+        uses: octokit/request-action@v2.x
+        id: get_check
+        with:
+          route: GET /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: DBG Show the check
+        run:
+          echo "${{ steps.get_check.outputs.data }}"
+
       - name: DBG Update status of a kickstart-test check in case of failue
         uses: octokit/request-action@v2.x
         with:
-          route: 'POST /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}'
+          route: POST /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}
           status: 'completed'
           # TODO failure?
           conclusion: 'neutral'
@@ -323,7 +335,7 @@ jobs:
         if: always() && job.status != 'success'
         uses: octokit/request-action@v2.x
         with:
-          route: 'POST /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}'
+          route: POST /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}
           status: 'completed'
           # TODO failure?
           conclusion: 'neutral'
