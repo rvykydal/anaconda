@@ -127,6 +127,14 @@ jobs:
         id: get_suites
         with:
           route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: DBG list unit-tests suites
+        uses: octokit/request-action@v2.x
+        id: get_suites
+        with:
+          route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
           check_name: "unit-tests"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
