@@ -122,9 +122,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: DBG list suites
+        uses: octokit/request-action@v2.x
+        id: get_suites
+        with:
+          route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Show the check
         run:
           echo "${{ steps.create_check.outputs.data }}"
+          echo "${{ steps.get_suites.outputs.data }}"
+
 
       - name: Fail
         run: |
