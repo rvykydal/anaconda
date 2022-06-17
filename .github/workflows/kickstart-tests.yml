@@ -117,7 +117,7 @@ jobs:
           route: 'POST /repos/${{ github.repository }}/check-runs'
           name: '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
           status: 'in_progress'
-          output: { "title": '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}', "summary" : 'Kickstart tests run on a pull request comment', "text" : 'No results available yet' }
+          output: {"title":'${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}',"summary":'Kickstart tests run on a pull request comment',"text":'No results available yet'}
           head_sha: ${{ needs.pr-info.outputs.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
