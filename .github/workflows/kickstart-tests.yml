@@ -124,7 +124,7 @@ jobs:
 
       - name: DBG list suites
         uses: octokit/request-action@v2.x
-        id: get_suites
+        id: get_the_suite
         with:
           route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
         env:
@@ -143,6 +143,7 @@ jobs:
         run:
           echo "${{ steps.create_check.outputs.data }}"
           echo "${{ steps.get_suites.outputs.data }}"
+          echo "${{ steps.get_the_suite.outputs.data }}"
 
 
       - name: Fail
