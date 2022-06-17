@@ -110,6 +110,23 @@ jobs:
       #
       # we post statuses manually as this does not run from a pull_request event
       # https://docs.github.com/en/rest/checks/runs#create-a-check-run
+
+      - name: Create a check suite
+        uses: octokit/request-action@v2.x
+        id: create_suite
+        with:
+          route: POST /repos/${{ github.repository }}/check-suites
+          head_sha: ${{ needs.pr-info.outputs.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show the suite
+        run:
+          echo "${{ steps.create_check.outputs.data }}"
+          #          echo "${{ steps.get_suites.outputs.data }}"
+          #echo "${{ steps.get_the_suite.outputs.data }}"
+
+
       - name: Create a kickstart-test check
         uses: octokit/request-action@v2.x
         id: create_check
@@ -122,28 +139,28 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: DBG list suites
-        uses: octokit/request-action@v2.x
-        id: get_the_suite
-        with:
-          route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: DBG list unit-tests suites
-        uses: octokit/request-action@v2.x
-        id: get_suites
-        with:
-          route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
-          check_name: "unit-tests"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+          #      - name: DBG list suites
+          #        uses: octokit/request-action@v2.x
+          #        id: get_the_suite
+          #        with:
+          #          route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
+          #        env:
+          #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #
+          #      - name: DBG list unit-tests suites
+          #        uses: octokit/request-action@v2.x
+          #        id: get_suites
+          #        with:
+          #          route: GET /repos/${{ github.repository }}/commits/${{ needs.pr-info.outputs.sha }}/check-suites
+          #          check_name: "unit-tests"
+          #        env:
+          #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          #
       - name: Show the check
         run:
           echo "${{ steps.create_check.outputs.data }}"
-          echo "${{ steps.get_suites.outputs.data }}"
-          echo "${{ steps.get_the_suite.outputs.data }}"
+          #          echo "${{ steps.get_suites.outputs.data }}"
+          #echo "${{ steps.get_the_suite.outputs.data }}"
 
 
       - name: Fail
