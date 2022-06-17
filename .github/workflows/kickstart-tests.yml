@@ -124,7 +124,7 @@ jobs:
 
       - name: Show the check id
         run:
-          echo "{{ fromJson(steps.create_check.outputs.data).id }}"
+          echo "${{ fromJson(steps.create_check.outputs.data).id }}"
 
       - name: Fail
         run: |
@@ -307,6 +307,18 @@ jobs:
           name: 'logs-permian'
           path: |
             permian/permian.log
+
+      - name: Update status of a kickstart-test check in case of failue
+        if: ${{ job.status }} != 'success'
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}'
+          name: '${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
+          status: 'completed'
+          # TODO failure?
+          conclusion: 'neutral'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
             #      # Permian hides the exit code of launcher
