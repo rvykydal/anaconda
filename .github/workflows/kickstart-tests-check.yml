@@ -1,0 +1,22 @@
+name: Run kickstart smoke tests
+on: pull_request
+
+permissions:
+  contents: read
+
+jobs:
+  kickstar-smoke-test:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Find the checks
+        uses: octokit/request-action@v2.x
+        id: list_check_runs
+        with:
+          route: GET /repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs
+          #check_name: "unit-tests"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show the checks
+        run:
+          echo "${{ steps.list_check_runs.outputs.data }}"
