@@ -7,7 +7,7 @@ permissions:
   statuses: write
 
 jobs:
-  kickstar-smoke-test:
+  kickstart-smoke-test:
     runs-on: ubuntu-20.04
     steps:
       - name: Find the checks
@@ -15,7 +15,7 @@ jobs:
         id: list_check_runs
         with:
           route: GET /repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs
-          check_name: "kickstar-smoke-test"
+          check_name: "kickstart-smoke-test"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -37,7 +37,7 @@ jobs:
         uses: octokit/request-action@v2.x
         with:
           route: 'POST /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}'
-          context: "Run kickstart smoke tests"
+          context: "kickstart-smoke-test"
           state: 'pending'
           #target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
         env:
