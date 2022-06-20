@@ -138,6 +138,7 @@ jobs:
           route: POST /repos/${{ github.repository }}/check-runs
           name: 'bla ${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}'
           status: 'in_progress'
+          details_url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
 
           #output: {"title":'${{ env.STATUS_NAME }} ${{ needs.pr-info.outputs.launch_args }}',"summary":'Kickstart tests run on a pull request comment',"text":'No results available yet'}
           head_sha: ${{ needs.pr-info.outputs.sha }}
