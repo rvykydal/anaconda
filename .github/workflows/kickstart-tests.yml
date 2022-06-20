@@ -111,19 +111,22 @@ jobs:
       # we post statuses manually as this does not run from a pull_request event
       # https://docs.github.com/en/rest/checks/runs#create-a-check-run
 
-      - name: Create a check suite
-        uses: octokit/request-action@v2.x
-        id: create_suite
-        with:
-          route: POST /repos/${{ github.repository }}/check-suites
-          head_sha: ${{ needs.pr-info.outputs.sha }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Show the suite
+      #      - name: Create a check suite
+      #        uses: octokit/request-action@v2.x
+      #        id: create_suite
+      #        with:
+      #          route: POST /repos/${{ github.repository }}/check-suites
+      #          head_sha: ${{ needs.pr-info.outputs.sha }}
+      #        env:
+      #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #
+      - name: Show data
         run:
-          echo "${{ steps.create_suite.outputs.data }}"
-          echo "${{ github }}"
+          #echo "${{ steps.create_suite.outputs.data }}"
+          echo "${{ github.job }}"
+          echo "${{ github.run_id }}"
+          echo "${{ github.run_number }}"
+          echo "${{ github.action }}"
           #          echo "${{ steps.get_suites.outputs.data }}"
           #echo "${{ steps.get_the_suite.outputs.data }}"
 
