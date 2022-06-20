@@ -20,17 +20,14 @@ jobs:
       - name: Show the checks
         run:
           echo "${{ steps.list_check_runs.outputs.data }}"
-          echo "${{ fromJson(steps.list_check_runs.outputs.data).check_runs }}"
           echo "${{ fromJson(steps.list_check_runs.outputs.data).check_runs[0].id }}"
 
-          #      - name: Update status of kickstart-test check as pending and set info about how to run it
-          #        uses: octokit/request-action@v2.x
-          #        with:
-          #          route: PATCH /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.create_check.outputs.data).id }}
-          #          status: 'completed'
-          #          # TODO failure?
-          #          conclusion: 'neutral'
-          #        env:
-          #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          #
-          #
+      - name: Update status of kickstart-test check as pending and set info about how to run it
+        uses: octokit/request-action@v2.x
+        with:
+          route: PATCH /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.list_check_runs.outputs.data).check_runs[0].id }}
+          status: 'queued'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
