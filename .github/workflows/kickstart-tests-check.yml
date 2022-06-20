@@ -4,6 +4,7 @@ on: pull_request
 permissions:
   contents: read
   checks: write
+  statuses: write
 
 jobs:
   kickstar-smoke-test:
@@ -28,6 +29,17 @@ jobs:
         with:
           route: PATCH /repos/${{ github.repository }}/check-runs/${{ fromJson(steps.list_check_runs.outputs.data).check_runs[0].id }}
           status: 'queued'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set result status
+        if: always()
+        uses: octokit/request-action@v2.x
+        with:
+          route: 'POST /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }}'
+          context: "Run kickstart smoke tests"
+          state: 'pending'
+          #target_url: 'https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
