@@ -1,4 +1,4 @@
-Anaconda
+Anaconda13
 ========
 
 Anaconda is the OS installer used by Fedora, RHEL, CentOS and other Linux distributions.
