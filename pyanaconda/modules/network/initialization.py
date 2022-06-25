@@ -21,11 +21,13 @@ import re
 from pyanaconda.core.regexes import NM_MAC_INITRAMFS_CONNECTION
 from pyanaconda.modules.common.task import Task
 from pyanaconda.anaconda_loggers import get_module_logger
+from pyanaconda.core.glib import create_new_context
 from pyanaconda.modules.network.network_interface import NetworkInitializationTaskInterface
 from pyanaconda.modules.network.nm_client import get_device_name_from_network_data, \
     update_connection_from_ksdata, add_connection_from_ksdata, bound_hwaddr_of_device, \
     update_connection_values, commit_changes_with_autoconnection_blocked, \
-    get_config_file_connection_of_device, clone_connection_sync
+    get_config_file_connection_of_device, clone_connection_sync, get_new_nm_client, \
+    activate_connection_sync
 from pyanaconda.modules.network.device_configuration import supported_wired_device_types, \
     virtual_device_types
 from pyanaconda.modules.network.utils import guard_by_system_configuration
@@ -40,11 +42,9 @@ from gi.repository import NM
 class ApplyKickstartTask(Task):
     """Task for application of kickstart network configuration."""
 
-    def __init__(self, nm_client, network_data, supported_devices, bootif, ifname_option_values):
+    def __init__(self, network_data, supported_devices, bootif, ifname_option_values):
         """Create a new task.
 
-        :param nm_client: NetworkManager client used as configuration backend
-        :type nm_client: NM.Client
         :param network_data: kickstart network data to be applied
         :type: list(NetworkData)
         :param supported_devices: list of names of supported network devices
@@ -55,7 +55,7 @@ class ApplyKickstartTask(Task):
         :type ifname_option_values: list(str)
         """
         super().__init__()
-        self._nm_client = nm_client
+        self._nm_client = None
         self._network_data = network_data
         self._supported_devices = supported_devices
         self._bootif = bootif
@@ -82,8 +82,13 @@ class ApplyKickstartTask(Task):
             log.debug("%s: No kickstart data.", self.name)
             return applied_devices
 
+        mainctx = create_new_context()
+        mainctx.push_thread_default()
+
+        self._nm_client = get_new_nm_client()
         if not self._nm_client:
             log.debug("%s: No NetworkManager available.", self.name)
+            mainctx.pop_thread_default()
             return applied_devices
 
         for network_data in self._network_data:
@@ -113,11 +118,12 @@ class ApplyKickstartTask(Task):
                     connection,
                     network_data,
                     device_name,
-                    ifname_option_values=self._ifname_option_values
+                    ifname_option_values=self._ifname_option_values,
+                    mainctx=mainctx
                 )
                 if network_data.activate:
                     device = self._nm_client.get_device_by_iface(device_name)
-                    self._nm_client.activate_connection_async(connection, device, None, None)
+                    activate_connection_sync(self._nm_client, connection, device, mainctx=mainctx)
                     log.debug("%s: activating updated connection %s with device %s",
                               self.name, connection.get_uuid(), device_name)
             else:
@@ -127,8 +133,11 @@ class ApplyKickstartTask(Task):
                     network_data,
                     device_name,
                     activate=network_data.activate,
-                    ifname_option_values=self._ifname_option_values
+                    ifname_option_values=self._ifname_option_values,
+                    mainctx=mainctx
                 )
+
+        mainctx.pop_thread_default()
 
         return applied_devices
 
@@ -145,18 +154,16 @@ class ApplyKickstartTask(Task):
 class DumpMissingConfigFilesTask(Task):
     """Task for dumping of missing config files."""
 
-    def __init__(self, nm_client, default_network_data, ifname_option_values):
+    def __init__(self, default_network_data, ifname_option_values):
         """Create a new task.
 
-        :param nm_client: NetworkManager client used as configuration backend
-        :type nm_client: NM.Client
         :param default_network_data: kickstart network data of default device configuration
         :type default_network_data: NetworkData
         :param ifname_option_values: list of ifname boot option values
         :type ifname_option_values: list(str)
         """
         super().__init__()
-        self._nm_client = nm_client
+        self._nm_client = None
         self._default_network_data = default_network_data
         self._ifname_option_values = ifname_option_values
 
@@ -218,8 +225,13 @@ class DumpMissingConfigFilesTask(Task):
         """
         new_configs = []
 
+        mainctx = create_new_context()
+        mainctx.push_thread_default()
+
+        self._nm_client = get_new_nm_client()
         if not self._nm_client:
             log.debug("%s: No NetworkManager available.", self.name)
+            mainctx.pop_thread_default()
             return new_configs
 
         dumped_device_types = supported_wired_device_types + virtual_device_types
@@ -259,7 +271,8 @@ class DumpMissingConfigFilesTask(Task):
                     # Try to clone the persistent connection for the device
                     # from the connection which should be a generic (not bound
                     # to iface) connection created by NM in initramfs
-                    con = clone_connection_sync(self._nm_client, cons[0], con_id=iface)
+                    con = clone_connection_sync(self._nm_client, cons[0],
+                                                con_id=iface, mainctx=mainctx)
 
             if con:
                 self._update_connection(con, iface)
@@ -285,7 +298,7 @@ class DumpMissingConfigFilesTask(Task):
                     )
                 log.debug("%s: dumping connection %s to config file for %s",
                           self.name, con.get_uuid(), iface)
-                commit_changes_with_autoconnection_blocked(con)
+                commit_changes_with_autoconnection_blocked(con, mainctx=mainctx)
             else:
                 log.debug("%s: none of the connections can be dumped as persistent",
                           self.name)
@@ -302,10 +315,13 @@ class DumpMissingConfigFilesTask(Task):
                     network_data,
                     iface,
                     activate=False,
-                    ifname_option_values=self._ifname_option_values
+                    ifname_option_values=self._ifname_option_values,
+                    mainctx=mainctx
                 )
 
             new_configs.append(iface)
+
+        mainctx.pop_thread_default()
 
         return new_configs
 

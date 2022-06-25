@@ -25,6 +25,7 @@ from gi.repository import NM
 import socket
 from queue import Queue, Empty
 from pykickstart.constants import BIND_TO_MAC
+from pyanaconda.core.glib import create_main_loop
 from pyanaconda.modules.network.constants import NM_CONNECTION_UUID_LENGTH, \
     CONNECTION_ACTIVATION_TIMEOUT, NM_CONNECTION_TYPE_WIFI, NM_CONNECTION_TYPE_ETHERNET, \
     NM_CONNECTION_TYPE_VLAN, NM_CONNECTION_TYPE_BOND,  NM_CONNECTION_TYPE_TEAM, \
@@ -33,6 +34,7 @@ from pyanaconda.modules.network.kickstart import default_ks_vlan_interface_name
 from pyanaconda.modules.network.utils import is_s390, get_s390_settings, netmask2prefix, \
     prefix2netmask
 from pyanaconda.modules.network.config_file import is_config_file_for_system
+from pyanaconda.core.dbus import SystemBus
 
 from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
@@ -49,6 +51,22 @@ NM_BRIDGE_DUMPED_SETTINGS_DEFAULTS = {
     NM.SETTING_BRIDGE_GROUP_FORWARD_MASK: 0,
     NM.SETTING_BRIDGE_MULTICAST_SNOOPING: True
 }
+
+
+def get_new_nm_client():
+    """Get new instance of NMClient.
+
+    :returns: an instance of NetworkManager NMClient or None if system bus
+              is not available or NM is not running
+    :rtype: NM.NMClient
+    """
+    if SystemBus.check_connection():
+        nm_client = NM.Client.new(None)
+        if nm_client.get_nm_running():
+            return nm_client
+        else:
+            log.debug("NetworkManager is not running")
+            return None
 
 
 def get_iface_from_connection(nm_client, uuid):
@@ -233,13 +251,15 @@ def _update_bond_connection_from_ksdata(connection, network_data):
     connection.add_setting(s_bond)
 
 
-def _add_existing_virtual_device_to_bridge(nm_client, device_name, bridge_spec):
+def _add_existing_virtual_device_to_bridge(nm_client, device_name, bridge_spec, mainctx=None):
     """Add existing virtual device to a bridge.
 
     :param device_name: name of the virtual device to be added
     :type device_name: str
     :param bridge_spec: specification of the bridge (interface name or connection uuid)
     :type bridge_spec: str
+    :param mainctx: current thread-default maincontext
+    :type mainctx: GLib.MainContext
     :returns: uuid of the updated connection or None
     :rtype: str
     """
@@ -268,7 +288,7 @@ def _add_existing_virtual_device_to_bridge(nm_client, device_name, bridge_spec):
              bridge_spec),
         ]
     )
-    commit_changes_with_autoconnection_blocked(port_connection)
+    commit_changes_with_autoconnection_blocked(port_connection, mainctx=mainctx)
     return port_connection.get_uuid()
 
 
@@ -410,7 +430,8 @@ def _create_new_connection(network_data, device_name):
     return con
 
 
-def create_connections_from_ksdata(nm_client, network_data, device_name, ifname_option_values=None):
+def create_connections_from_ksdata(nm_client, network_data, device_name,
+                                   ifname_option_values=None, mainctx=None):
     """Create NM connections from kickstart configuration.
 
     :param network_data: kickstart configuration
@@ -419,6 +440,8 @@ def create_connections_from_ksdata(nm_client, network_data, device_name, ifname_
     :type device_name: str
     :param ifname_option_values: list of ifname boot option values
     :type ifname_option_values: list(str)
+    :param mainctx: current thread-default maincontext
+    :type mainctx: GLib.MainContext
     :return: list of tuples (CONNECTION, NAME_OF_DEVICE_TO_BE_ACTIVATED)
     :rtype: list((NM.RemoteConnection, str))
     """
@@ -473,7 +496,8 @@ def create_connections_from_ksdata(nm_client, network_data, device_name, ifname_
         _update_bridge_connection_from_ksdata(con, network_data)
 
         for i, port in enumerate(network_data.bridgeslaves.split(","), 1):
-            if not _add_existing_virtual_device_to_bridge(nm_client, port, device_name):
+            if not _add_existing_virtual_device_to_bridge(nm_client, port,
+                                                          device_name, mainctx=mainctx):
                 port_con = create_port_connection('bridge', i, port, device_name,
                                                   network_data.onboot)
                 bind_connection(nm_client, port_con, network_data.bindto, port)
@@ -507,7 +531,7 @@ def create_connections_from_ksdata(nm_client, network_data, device_name, ifname_
 
 
 def add_connection_from_ksdata(nm_client, network_data, device_name, activate=False,
-                               ifname_option_values=None):
+                               ifname_option_values=None, mainctx=None):
     """Add NM connection created from kickstart configuration.
 
     :param network_data: kickstart configuration
@@ -518,12 +542,15 @@ def add_connection_from_ksdata(nm_client, network_data, device_name, activate=Fa
     :type activate: bool
     :param ifname_option_values: list of ifname boot option values
     :type ifname_option_values: list(str)
+    :param mainctx: current thread-default maincontext
+    :type mainctx: GLib.MainContext
     """
     connections = create_connections_from_ksdata(
         nm_client,
         network_data,
         device_name,
-        ifname_option_values
+        ifname_option_values,
+        mainctx=mainctx
     )
 
     for connection, device_name in connections:
@@ -533,6 +560,7 @@ def add_connection_from_ksdata(nm_client, network_data, device_name, activate=Fa
         added_connection = add_connection_sync(
             nm_client,
             connection,
+            mainctx=mainctx
         )
 
         if not added_connection:
@@ -549,26 +577,30 @@ def add_connection_from_ksdata(nm_client, network_data, device_name, activate=Fa
             else:
                 device = None
                 log.debug("activating without device specified")
-            nm_client.activate_connection_async(added_connection, device, None, None)
+            activate_connection_sync(nm_client, added_connection, device, mainctx=mainctx)
 
     return connections
 
 
-def add_connection_sync(nm_client, connection):
+def add_connection_sync(nm_client, connection, mainctx=None):
     """Add a connection synchronously and optionally activate asynchronously.
 
     :param connection: connection to be added
     :type connection: NM.SimpleConnection
+    :param mainctx: current thread-default maincontext
+    :type mainctx: GLib.MainContext
     :return: added connection or None on timeout
     :rtype: NM.RemoteConnection
     """
     sync_queue = Queue()
+    loop = create_main_loop(mainctx)
 
     def finish_callback(nm_client, result, sync_queue):
         con, result = nm_client.add_connection2_finish(result)
         log.debug("connection %s added:\n%s", con.get_uuid(),
                   con.to_dbus(NM.ConnectionSerializationFlags.NO_SECRETS))
         sync_queue.put(con)
+        loop.quit()
 
     nm_client.add_connection2(
         connection.to_dbus(NM.ConnectionSerializationFlags.ALL),
@@ -580,6 +612,8 @@ def add_connection_sync(nm_client, connection):
         finish_callback,
         sync_queue
     )
+
+    loop.run()
 
     try:
         ret = sync_queue.get(timeout=CONNECTION_ADDING_TIMEOUT)
@@ -674,7 +708,7 @@ def bound_hwaddr_of_device(nm_client, device_name, ifname_option_values):
 
 
 def update_connection_from_ksdata(nm_client, connection, network_data, device_name,
-                                  ifname_option_values=None):
+                                  ifname_option_values=None, mainctx=None):
     """Update NM connection specified by uuid from kickstart configuration.
 
     :param connection: existing NetworkManager connection to be updated
@@ -685,6 +719,8 @@ def update_connection_from_ksdata(nm_client, connection, network_data, device_na
     :type device_name: str
     :param ifname_option_values: list of ifname boot option values
     :type ifname_option_values: list(str)
+    :param mainctx: current thread-default maincontext
+    :type mainctx: GLib.MainContext
     """
     log.debug("updating connection %s:\n%s", connection.get_uuid(),
               connection.to_dbus(NM.ConnectionSerializationFlags.NO_SECRETS))
@@ -713,7 +749,7 @@ def update_connection_from_ksdata(nm_client, connection, network_data, device_na
         else:
             bind_connection(nm_client, connection, network_data.bindto, device_name)
 
-    commit_changes_with_autoconnection_blocked(connection)
+    commit_changes_with_autoconnection_blocked(connection, mainctx=mainctx)
 
     log.debug("updated connection %s:\n%s", connection.get_uuid(),
               connection.to_dbus(NM.ConnectionSerializationFlags.NO_SECRETS))
@@ -1013,7 +1049,7 @@ def get_connections_dump(nm_client):
     return "\n".join(con_dumps)
 
 
-def commit_changes_with_autoconnection_blocked(connection, save_to_disk=True):
+def commit_changes_with_autoconnection_blocked(connection, save_to_disk=True, mainctx=None):
     """Implementation of NM CommitChanges() method with blocked autoconnection.
 
     Update2() API is used to implement the functionality (called synchronously).
@@ -1025,14 +1061,18 @@ def commit_changes_with_autoconnection_blocked(connection, save_to_disk=True):
     :type connection: NM.RemoteConnection
     :param save_to_disk: should the changes be written also to disk?
     :type save_to_disk: bool
+    :param mainctx: current thread-default maincontext
+    :type mainctx: GLib.MainContext
     :return: on success result of the Update2() call, None of failure
     :rtype: GVariant of type "a{sv}" or None
     """
     sync_queue = Queue()
+    loop = create_main_loop(mainctx)
 
     def finish_callback(connection, result, sync_queue):
         ret = connection.update2_finish(result)
         sync_queue.put(ret)
+        loop.quit()
 
     flags = NM.SettingsUpdate2Flags.BLOCK_AUTOCONNECT
     if save_to_disk:
@@ -1048,10 +1088,51 @@ def commit_changes_with_autoconnection_blocked(connection, save_to_disk=True):
         sync_queue
     )
 
+    loop.run()
+
     return sync_queue.get()
 
 
-def clone_connection_sync(nm_client, connection, con_id=None, uuid=None):
+def activate_connection_sync(nm_client, connection, device, mainctx=None):
+    """Activate a connection synchronously.
+    Synchronous wrapper of ActivateConnection() NM method.
+    :param connection: NetworkManager connection
+    :type connection: NM.RemoteConnection
+    :param device: the preferred device to apply the connection to
+                   None if not needed
+    :type device: NM.Device
+    :param mainctx: current thread-default maincontext
+    :type mainctx: GLib.MainContext
+    """
+    sync_queue = Queue()
+    loop = create_main_loop(mainctx)
+
+    def finish_callback(nm_client, result, sync_queue):
+        ret = nm_client.activate_connection_finish(result)
+        sync_queue.put(ret)
+        loop.quit()
+
+    nm_client.activate_connection_async(
+        connection,
+        device,
+        None,
+        None,
+        finish_callback,
+        sync_queue
+    )
+
+    loop.run()
+
+    try:
+        ret = sync_queue.get(timeout=CONNECTION_ACTIVATION_TIMEOUT)
+    except Empty:
+        log.error("Activation of a connection timed out.")
+        ret = None
+
+    return ret
+
+
+def clone_connection_sync(nm_client, connection, con_id=None, uuid=None, mainctx=None):
     """Clone a connection synchronously.
 
     :param connection: NetworkManager connection
@@ -1060,16 +1141,20 @@ def clone_connection_sync(nm_client, connection, con_id=None, uuid=None):
     :type con_id: str
     :param uuid: uuid of the cloned connection (None to be generated)
     :type uuid: str
+    :param mainctx: current thread-default maincontext
+    :type mainctx: GLib.MainContext
     :return: NetworkManager connection or None on timeout
     :rtype: NM.RemoteConnection
     """
     sync_queue = Queue()
+    loop = create_main_loop(mainctx)
 
     def finish_callback(nm_client, result, sync_queue):
         con, result = nm_client.add_connection2_finish(result)
         log.debug("connection %s cloned:\n%s", con.get_uuid(),
                   con.to_dbus(NM.ConnectionSerializationFlags.NO_SECRETS))
         sync_queue.put(con)
+        loop.quit()
 
     cloned_connection = NM.SimpleConnection.new_clone(connection)
     s_con = cloned_connection.get_setting_connection()
@@ -1085,6 +1170,8 @@ def clone_connection_sync(nm_client, connection, con_id=None, uuid=None):
         finish_callback,
         sync_queue
     )
+
+    loop.run()
 
     try:
         ret = sync_queue.get(timeout=CONNECTION_ACTIVATION_TIMEOUT)

@@ -46,11 +46,14 @@ __all__ = ["create_main_loop", "create_new_context",
            "MAXUINT"]
 
 
-def create_main_loop():
+def create_main_loop(mainctx=None):
     """Create GLib main loop.
 
+    :param mainctx: create a mainloop with mainctx
     :returns: GLib.MainLoop instance.
     """
+    if mainctx:
+        return MainLoop(mainctx)
     return MainLoop()
 
 
