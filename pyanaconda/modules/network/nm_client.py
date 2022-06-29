@@ -63,6 +63,7 @@ def get_new_nm_client():
     if SystemBus.check_connection():
         nm_client = NM.Client.new(None)
         if nm_client.get_nm_running():
+            log.debug("DDDDD Getting new NMClient %s", nm_client)
             return nm_client
         else:
             log.debug("NetworkManager is not running")
@@ -753,6 +754,10 @@ def update_connection_from_ksdata(nm_client, connection, network_data, device_na
 
     log.debug("updated connection %s:\n%s", connection.get_uuid(),
               connection.to_dbus(NM.ConnectionSerializationFlags.NO_SECRETS))
+
+    log.debug("DDDDD connection.get_filename(): %s", connection.get_filename())
+    log.debug("DDDDD calling get_config_file_connection_of_device %s", device_name)
+    get_config_file_connection_of_device(nm_client, device_name)
 
 
 def update_connection_ip_settings_from_ksdata(connection, network_data):
@@ -1455,9 +1460,11 @@ def get_config_file_connection_of_device(nm_client, device_name, device_hwaddr=N
     """
 
     cons = []
+    log.debug("DDDDD: Calling nm_client.get_connections(), nm_client: %s", nm_client)
     for con in nm_client.get_connections():
 
         filename = con.get_filename() or ""
+        log.debug("DDDDD: con.get_filename(): connection %s -> filename %s", con, filename)
         # Ignore connections from initramfs in
         # /run/NetworkManager/system-connections
         if not is_config_file_for_system(filename):
