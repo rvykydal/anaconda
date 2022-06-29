@@ -311,6 +311,6 @@ class ConfigureActivationOnBootTask(Task):
                     con,
                     [("connection", NM.SETTING_CONNECTION_AUTOCONNECT, True)]
                 )
-                commit_changes_with_autoconnection_blocked(con)
+                commit_changes_with_autoconnection_blocked(self._nm_client, con)
             else:
                 log.warning("Configure ONBOOT: can't find config for %s", iface)

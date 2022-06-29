@@ -285,7 +285,7 @@ class DumpMissingConfigFilesTask(Task):
                     )
                 log.debug("%s: dumping connection %s to config file for %s",
                           self.name, con.get_uuid(), iface)
-                commit_changes_with_autoconnection_blocked(con)
+                commit_changes_with_autoconnection_blocked(self._nm_client, con)
             else:
                 log.debug("%s: none of the connections can be dumped as persistent",
                           self.name)
