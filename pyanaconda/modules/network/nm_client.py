@@ -23,7 +23,7 @@ gi.require_version("NM", "1.0")
 from gi.repository import NM
 
 import socket
-from queue import Queue, Empty
+from queue import Empty
 from pykickstart.constants import BIND_TO_MAC
 from pyanaconda.core.glib import create_main_loop
 from pyanaconda.modules.network.constants import NM_CONNECTION_UUID_LENGTH, \
@@ -592,14 +592,14 @@ def add_connection_sync(nm_client, connection, mainctx=None):
     :return: added connection or None on timeout
     :rtype: NM.RemoteConnection
     """
-    sync_queue = Queue()
     loop = create_main_loop(mainctx)
+    added_cons = []
 
-    def finish_callback(nm_client, result, sync_queue):
+    def finish_callback(nm_client, result):
         con, result = nm_client.add_connection2_finish(result)
         log.debug("connection %s added:\n%s", con.get_uuid(),
                   con.to_dbus(NM.ConnectionSerializationFlags.NO_SECRETS))
-        sync_queue.put(con)
+        added_cons.append(con)
         loop.quit()
 
     nm_client.add_connection2(
@@ -609,19 +609,19 @@ def add_connection_sync(nm_client, connection, mainctx=None):
         None,
         False,
         None,
-        finish_callback,
-        sync_queue
+        finish_callback
     )
 
     loop.run()
 
-    try:
-        ret = sync_queue.get(timeout=CONNECTION_ADDING_TIMEOUT)
-    except Empty:
-        log.error("Adding of connection %s timed out.", connection.get_uuid())
-        ret = None
+    # TODO timeout
+    #try:
+    #    ret = sync_queue.get(timeout=CONNECTION_ADDING_TIMEOUT)
+    #except Empty:
+    #    log.error("Adding of connection %s timed out.", connection.get_uuid())
+    #    ret = None
 
-    return ret
+    return added_cons[0]
 
 
 def create_port_connection(port_type, port_idx, port, controller, autoconnect, settings=None):
@@ -1066,12 +1066,10 @@ def commit_changes_with_autoconnection_blocked(connection, save_to_disk=True, ma
     :return: on success result of the Update2() call, None of failure
     :rtype: GVariant of type "a{sv}" or None
     """
-    sync_queue = Queue()
     loop = create_main_loop(mainctx)
 
-    def finish_callback(connection, result, sync_queue):
+    def finish_callback(connection, result):
         ret = connection.update2_finish(result)
-        sync_queue.put(ret)
         loop.quit()
 
     flags = NM.SettingsUpdate2Flags.BLOCK_AUTOCONNECT
@@ -1084,13 +1082,12 @@ def commit_changes_with_autoconnection_blocked(connection, save_to_disk=True, ma
         flags,
         None,
         None,
-        finish_callback,
-        sync_queue
+        finish_callback
     )
 
     loop.run()
 
-    return sync_queue.get()
+    return True
 
 
 def activate_connection_sync(nm_client, connection, device, mainctx=None):
@@ -1104,12 +1101,10 @@ def activate_connection_sync(nm_client, connection, device, mainctx=None):
     :param mainctx: current thread-default maincontext
     :type mainctx: GLib.MainContext
     """
-    sync_queue = Queue()
     loop = create_main_loop(mainctx)
 
-    def finish_callback(nm_client, result, sync_queue):
+    def finish_callback(nm_client, result):
         ret = nm_client.activate_connection_finish(result)
-        sync_queue.put(ret)
         loop.quit()
 
     nm_client.activate_connection_async(
@@ -1117,19 +1112,18 @@ def activate_connection_sync(nm_client, connection, device, mainctx=None):
         device,
         None,
         None,
-        finish_callback,
-        sync_queue
+        finish_callback
     )
 
     loop.run()
 
-    try:
-        ret = sync_queue.get(timeout=CONNECTION_ACTIVATION_TIMEOUT)
-    except Empty:
-        log.error("Activation of a connection timed out.")
-        ret = None
+    #try:
+    #    ret = sync_queue.get(timeout=CONNECTION_ACTIVATION_TIMEOUT)
+    #except Empty:
+    #    log.error("Activation of a connection timed out.")
+    #    ret = None
 
-    return ret
+    return True
 
 
 def clone_connection_sync(nm_client, connection, con_id=None, uuid=None, mainctx=None):
@@ -1146,14 +1140,14 @@ def clone_connection_sync(nm_client, connection, con_id=None, uuid=None, mainctx
     :return: NetworkManager connection or None on timeout
     :rtype: NM.RemoteConnection
     """
-    sync_queue = Queue()
     loop = create_main_loop(mainctx)
+    cloned_cons = []
 
-    def finish_callback(nm_client, result, sync_queue):
+    def finish_callback(nm_client, result):
         con, result = nm_client.add_connection2_finish(result)
         log.debug("connection %s cloned:\n%s", con.get_uuid(),
                   con.to_dbus(NM.ConnectionSerializationFlags.NO_SECRETS))
-        sync_queue.put(con)
+        cloned_cons.append(con)
         loop.quit()
 
     cloned_connection = NM.SimpleConnection.new_clone(connection)
@@ -1167,19 +1161,18 @@ def clone_connection_sync(nm_client, connection, con_id=None, uuid=None, mainctx
         None,
         False,
         None,
-        finish_callback,
-        sync_queue
+        finish_callback
     )
 
     loop.run()
 
-    try:
-        ret = sync_queue.get(timeout=CONNECTION_ACTIVATION_TIMEOUT)
-    except Empty:
-        log.error("Cloning of a connection timed out.")
-        ret = None
+#    try:
+#        ret = sync_queue.get(timeout=CONNECTION_ACTIVATION_TIMEOUT)
+#    except Empty:
+#        log.error("Cloning of a connection timed out.")
+#        ret = None
 
-    return ret
+    return cloned_cons[0]
 
 
 def get_dracut_arguments_from_connection(nm_client, connection, iface, target_ip,
