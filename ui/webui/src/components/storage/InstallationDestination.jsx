@@ -21,22 +21,29 @@ import {
     Alert, AlertActionCloseButton,
     Bullseye,
     Button,
+    Divider,
+    Dropdown,
+    DropdownItem,
+    DropdownToggle,
+    DropdownToggleCheckbox,
     EmptyState,
     EmptyStateIcon,
     Flex,
     FlexItem,
     Form,
     FormGroup,
-    Label,
+    FormSection,
     Spinner,
     Text,
     TextContent,
     TextVariants,
     Title,
+    Toolbar,
+    ToolbarContent,
+    ToolbarItem,
 } from "@patternfly/react-core";
 
 import { EmptyStatePanel } from "cockpit-components-empty-state.jsx";
-import { SyncAltIcon } from "@patternfly/react-icons";
 import { ListingTable } from "cockpit-components-table.jsx";
 
 import {
@@ -99,6 +106,7 @@ const LocalStandardDisks = ({ idPrefix, setIsFormValid, onAddErrorNotification }
     const [deviceData, setDeviceData] = useState({});
     const [disks, setDisks] = useState({});
     const [refreshCnt, setRefreshCnt] = useState(0);
+    const [isDiscoveringDisks, setIsDiscoveringDisks] = useState(false);
 
     useEffect(() => {
         let usableDisks;
@@ -165,23 +173,12 @@ const LocalStandardDisks = ({ idPrefix, setIsFormValid, onAddErrorNotification }
         />
     );
 
-    const diskSelectionLabel = (
-        <Label
-          color="blue"
-          id="installation-destination-table-label"
-        >
-            {cockpit.format(
-                cockpit.ngettext("$0 (of $1) disk selected", "$0 (of $1) disks selected", selectedDisksCnt),
-                selectedDisksCnt,
-                totalDisksCnt
-            )}
-        </Label>
-    );
-
     const rescanDisksButton = (
         <Button
-          aria-label={_("Rescan disks")}
+          aria-label={_("Discover disks")}
           id={idPrefix + "-rescan-disks"}
+          isLoading={isDiscoveringDisks}
+          variant="secondary"
           onClick={() => {
               scanDevicesWithTask().then(res => {
                   runStorageTask({
@@ -189,11 +186,12 @@ const LocalStandardDisks = ({ idPrefix, setIsFormValid, onAddErrorNotification }
                       onSuccess: () => resetPartitioning().then(() => setRefreshCnt(refreshCnt + 1), onAddErrorNotification),
                       onFail: onAddErrorNotification
                   });
-              });
+              })
+                      .finally(() => { setIsDiscoveringDisks(false) });
+              setIsDiscoveringDisks(true);
           }}
-          variant="plain"
         >
-            <SyncAltIcon />
+            {_("Discover disks")}
         </Button>
     );
 
@@ -233,27 +231,99 @@ const LocalStandardDisks = ({ idPrefix, setIsFormValid, onAddErrorNotification }
         }
     ));
 
+    const setSelectionForAllDisks = (value) => {
+        setDisks(Object.keys(disks).reduce((acc, cur) => ({ ...acc, [cur]: value }), {}));
+    };
+
+    const DropdownSplitButtonText = () => {
+        const [isOpen, setIsOpen] = React.useState(false);
+
+        const onToggle = (isOpen) => {
+            setIsOpen(isOpen);
+        };
+
+        const onFocus = () => {
+            const element = document.getElementById("local-disks-bulk-select-toggle");
+            element.focus();
+        };
+
+        const onSelect = () => {
+            setIsOpen(false);
+            onFocus();
+        };
+
+        const dropdownItems = [
+            <DropdownItem
+              key="select-none"
+              component="button"
+              aria-label={_("Select none disk")}
+              onClick={() => setSelectionForAllDisks(false)}
+              id="local-disks-bulk-select-none"
+            >
+                {_("Select none")}
+            </DropdownItem>,
+            <DropdownItem
+              key="select-all"
+              component="button"
+              aria-label={_("Select all disks")}
+              onClick={() => setSelectionForAllDisks(true)}
+              id="local-disks-bulk-select-all"
+            >
+                {_("Select all")}
+            </DropdownItem>,
+        ];
+
+        return (
+            <Dropdown
+              onSelect={onSelect}
+              toggle={
+                  <DropdownToggle
+                    splitButtonItems={[
+                        <DropdownToggleCheckbox
+                          key="select-multiple-split-checkbox"
+                          aria-label={_("Select multiple disks")}
+                          isChecked={selectedDisksCnt > 0}
+                        >
+                            {cockpit.format(_("$0 selected"), selectedDisksCnt)}
+                        </DropdownToggleCheckbox>
+                    ]}
+                    onToggle={onToggle}
+                    id="local-disks-bulk-select-toggle"
+                  />
+              }
+              isOpen={isOpen}
+              dropdownItems={dropdownItems}
+            />
+        );
+    };
+
     return (
         <Form>
-            <FormGroup
-              label={_("Local standard disks")}
-              labelIcon={
-                  <Flex display={{ default: "inlineFlex" }}>
+            <FormSection
+              title={
+                  <Flex spaceItems={{ default: "spaceItemsXs" }}>
+                      <FlexItem><h3>{_("Local standard disks")}</h3></FlexItem>
                       <FlexItem>{localDisksInfo}</FlexItem>
-                      <FlexItem>{diskSelectionLabel}</FlexItem>
                   </Flex>
               }
-              labelInfo={rescanDisksButton}
-              isRequired
             >
-                <ListingTable
-                  aria-labelledby="installation-destination-local-disk-title"
-                  {...(totalDisksCnt > 10 && { variant: "compact" })}
-                  columns={localDisksColumns}
-                  onSelect={(_, isSelected, diskId) => setDisks({ ...disks, [Object.keys(disks)[diskId]]: isSelected })}
-                  rows={localDisksRows}
-                />
-            </FormGroup>
+                <FormGroup>
+                    <Toolbar>
+                        <ToolbarContent>
+                            <ToolbarItem variant="bulk-select"><DropdownSplitButtonText /></ToolbarItem>
+                            <ToolbarItem variant="separator"><Divider orientation={{ default: "vertical" }} /></ToolbarItem>
+                            <ToolbarItem>{rescanDisksButton}</ToolbarItem>
+                        </ToolbarContent>
+                    </Toolbar>
+                    <ListingTable
+                      aria-labelledby="installation-destination-local-disk-title"
+                      {...(totalDisksCnt > 10 && { variant: "compact" })}
+                      columns={localDisksColumns}
+                      onSelect={(_, isSelected, diskId) => setDisks({ ...disks, [Object.keys(disks)[diskId]]: isSelected })}
+                      rows={localDisksRows}
+                    />
+                </FormGroup>
+            </FormSection>
         </Form>
     );
 };

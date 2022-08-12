@@ -38,6 +38,19 @@ class Storage():
         self.browser.set_checked(f"#{disk} input", selected)
         self.check_disk_selected(disk, selected)
 
+    def select_all_disks_and_check(self, disks):
+        self.browser.click("#local-disks-bulk-select-toggle")
+        self.browser.click("#local-disks-bulk-select-all")
+        for disk in disks:
+            self.check_disk_selected(disk)
+
+    def select_none_disks_and_check(self, disks):
+        self.browser.click("#local-disks-bulk-select-toggle")
+        self.browser.click("#local-disks-bulk-select-none")
+        for disk in disks:
+            self.check_disk_selected(disk, False)
+
+
     def check_disk_selected(self, disk, selected=True):
         assert self.browser.get_checked(f"#{disk} input") == selected
 
