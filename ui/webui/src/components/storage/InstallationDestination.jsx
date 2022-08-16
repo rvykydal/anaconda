@@ -189,6 +189,7 @@ const LocalStandardDisks = ({ idPrefix, setIsFormValid, onAddErrorNotification }
               })
                       .finally(() => { setIsDiscoveringDisks(false) });
               setIsDiscoveringDisks(true);
+              setSelectionForAllDisks(false);
           }}
         >
             {_("Discover disks")}
