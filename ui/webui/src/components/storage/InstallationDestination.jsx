@@ -284,7 +284,7 @@ const LocalStandardDisks = ({ idPrefix, setIsFormValid, onAddErrorNotification }
                           aria-label={_("Select multiple disks")}
                           isChecked={selectedDisksCnt > 0}
                         >
-                            {cockpit.format(_("$0 selected"), selectedDisksCnt)}
+                            {selectedDisksCnt > 0 ? cockpit.format(_("$0 selected"), selectedDisksCnt) : ""}
                         </DropdownToggleCheckbox>
                     ]}
                     onToggle={onToggle}
