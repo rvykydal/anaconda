@@ -1,0 +1,117 @@
+# Run webui e2e tests on statically defined installer image in Permian
+name: webui-periodic
+on:
+  #schedule:
+  #  - cron: 0 23 * * *
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scenario:
+    name: Webui periodic
+    runs-on: [self-hosted, kstest-permian]
+
+    # these settings depend on the infrastructure; on upshift ocp-master-xxl they take about TODO hours
+    # TODO
+    timeout-minutes: 560
+    env:
+      # TODO wire
+      TEST_JOBS: 2
+      # The timeout should be ~TODO minutes less then the job's timeout-minutes
+      # so that we get partial results and logs in case of the timeout.
+      # TODO wire
+      LAUNCHER_TIMEOUT_MINUTES: 540
+
+    steps:
+      # TODO remove ?
+      # self-hosted runners don't do this automatically; also useful to keep stuff around for debugging
+      # need to run sudo as the launch script and the container create root/other user owned files
+      - name: Clean up previous run
+        run: |
+          sudo podman ps -q --all --filter='ancestor=kstest-runner' | xargs -tr sudo podman rm -f
+          sudo podman volume rm --all || true
+          sudo rm -rf *
+
+      # TODO For the library
+      - name: Clone anaconda repository
+        uses: actions/checkout@v3
+        with:
+          ref: master
+          fetch-depth: 0
+          path: anaconda
+
+
+      - name: Clone Permian repository
+        uses: actions/checkout@v3.3.0
+        with:
+          repository: rhinstaller/permian
+          path: permian
+          ref: devel
+
+      - name: Clone tplib repository
+        uses: actions/checkout@v3.3.0
+        with:
+          repository: rhinstaller/tplib
+          path: tplib
+
+      # TODO download latest preview https://fedorapeople.org/groups/anaconda/webui_preview_image/x86_64/webui_latest_install.iso
+
+      # TODO create dummy repository from the installer image (or support this in the workflow?)
+
+      - name: Create Permian settings file
+        working-directory: ./permian
+        run: |
+          cat <<EOF > settings.ini
+          [AnacondaWebUI]
+          #anaconda_repo=file://${{ github.workspace }}/anaconda
+          anaconda_repo=https://github.com/rhinstaller/anaconda.git
+          #cockpit_repo=https://github.com/rvykydal/cockpit.git
+          cockpit_repo=https://github.com/cockpit-project/cockpit.git
+          #cockpit_branch=cockpit-webui
+          cockpit_branch=287
+          hypervisor_vm_limit=${{ env.TEST_JOBS }}
+          test_timeout=${{ env.LAUNCHER_TIMEOUT_MINUTES }}
+          # TODO - can we run without library?
+          [library]
+          directPath=${{ github.workspace }}/anaconda/ui/webui/test/integration
+          EOF
+      # http://10.43.136.2/users/rv/s2/webui-zveleba-f39
+      # "http://192.168.122.1:8000/tmpname2",
+      # "http://10.0.79.236:8000/tmpname2",
+      - name: Run webui integration tests
+        working-directory: ./permian
+        run: |
+          PYTHONPATH=${PYTHONPATH:-}:${{ github.workspace }}/tplib \
+          ./pipeline --debug-log permian.log \
+            --settings settings.ini \
+            --override workflows.dry_run=False \
+            run_event '{
+              "type":"github.scheduled.preview",
+              "InstallationSource":{
+                "base_repo_id": "bootiso",
+                "repos": {
+                  "bootiso":{
+                    "x86_64":{
+                      "os": "http://10.43.136.2/users/rv/s2/webui-zveleba-f39",
+                      "kernel": "images/pxeboot/vmlinuz",
+                      "initrd": "images/pxeboot/initrd.img"
+                    }
+                  }
+                }
+              }
+            }'
+
+      # TODO split ?
+      - name: Collect Permian logs
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: 'logs'
+          path: |
+            permian/permian.log
+            permian/local_logs/
+            permian/*.dump
+
+
