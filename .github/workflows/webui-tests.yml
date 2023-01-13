@@ -185,6 +185,7 @@ jobs:
           path: |
             permian/permian.log
             permian/local_logs/
+            permian/*.dump
 
       - name: Set result status
         if: always()
