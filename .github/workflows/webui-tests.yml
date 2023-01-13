@@ -45,7 +45,7 @@ jobs:
         env:
           BODY: ${{ github.event.comment.body }}
         run: |
-          # extract first line and cut out the "/kickstart-tests" first word
+          # extract first line and cut out the "/webui-test" first word
           LAUNCH_ARGS=$(echo "$BODY" | sed -n '1 s/^[^ ]* *//p')
           echo "launch arguments are: $LAUNCH_ARGS"
           echo "launch_args=${LAUNCH_ARGS}" >> $GITHUB_OUTPUT
@@ -108,7 +108,7 @@ jobs:
         with:
           repository: rhinstaller/permian
           path: permian
-          ref: main
+          ref: devel
 
       - name: Clone tplib repository
         uses: actions/checkout@v3
