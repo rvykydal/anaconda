@@ -136,7 +136,7 @@ jobs:
         run: |
           cat <<EOF > settings.ini
           [AnacondaWebUI]
-          anaconda_repo=${{ github.workspace }}/anaconda
+          anaconda_repo=file://${{ github.workspace }}/anaconda
           hypervisor_vm_limit=${{ env.TEST_JOBS }}
           [library]
           directPath=${{ github.workspace }}/anaconda/ui/webui/test/integration
