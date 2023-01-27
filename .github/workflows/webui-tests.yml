@@ -106,9 +106,9 @@ jobs:
       - name: Clone Permian repository
         uses: actions/checkout@v3
         with:
-          repository: rvykydal/permian
+          repository: rhinstaller/permian
           path: permian
-          ref: test-virt-install-pty
+          ref: devel
 
       - name: Clone tplib repository
         uses: actions/checkout@v3
