@@ -49,6 +49,11 @@ export const AnacondaWizard = ({ onAddErrorNotification, toggleContextHelp, titl
             id: "installation-language",
             label: _("Welcome"),
         },
+        {
+            component: InstallationLanguage,
+            id: "installation-language2",
+            label: _("Welcome2"),
+        },
         // TODO rename installation-destination to disk-selection everywhere
         // and -root thing as well
         {
@@ -74,6 +79,7 @@ export const AnacondaWizard = ({ onAddErrorNotification, toggleContextHelp, titl
     // TODO generate
     const linearStepsOrder = [
         "installation-language",
+        "installation-language2",
         "installation-destination-root",
         "installation-destination",
         "installation-review",
