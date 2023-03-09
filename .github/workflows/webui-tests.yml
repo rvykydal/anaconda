@@ -111,7 +111,7 @@ jobs:
           #          ref: test-virt-install-pty
           repository: rhinstaller/permian
           path: permian
-          ref: virt-install-pty
+          ref: devel
 
       - name: Clone tplib repository
         uses: actions/checkout@v3
