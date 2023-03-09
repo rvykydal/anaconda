@@ -12,10 +12,6 @@ jobs:
   scenario:
     name: Webui periodic
     runs-on: [self-hosted, kstest-permian]
-    strategy:
-      matrix:
-        scenario: [daily-iso, rhel8, rhel9]
-      fail-fast: false
 
     # these settings depend on the infrastructure; on upshift ocp-master-xxl they take about TODO hours
     # TODO
