@@ -56,6 +56,8 @@ jobs:
           repository: rhinstaller/tplib
           path: tplib
 
+      # TODO download latest preview https://fedorapeople.org/groups/anaconda/webui_preview_image/x86_64/webui_latest_install.iso
+
       # TODO create dummy repository from the installer image (or support this in the workflow?)
 
       - name: Create Permian settings file
