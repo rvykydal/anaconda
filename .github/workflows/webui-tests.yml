@@ -140,6 +140,8 @@ jobs:
           cat <<EOF > settings.ini
           [AnacondaWebUI]
           anaconda_repo=file://${{ github.workspace }}/anaconda
+          cockpit_repo=https://github.com/rvykydal/cockpit.git
+          cockpit_branch=cockpit-webui
           hypervisor_vm_limit=${{ env.TEST_JOBS }}
           [library]
           directPath=${{ github.workspace }}/anaconda/ui/webui/test/integration
