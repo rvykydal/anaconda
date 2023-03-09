@@ -34,6 +34,15 @@ jobs:
           sudo podman volume rm --all || true
           sudo rm -rf *
 
+      # TODO For the library
+      - name: Clone anaconda repository
+        uses: actions/checkout@v3
+        with:
+          ref: master
+          fetch-depth: 0
+          path: anaconda
+
+
       - name: Clone Permian repository
         uses: actions/checkout@v3.3.0
         with:
@@ -59,8 +68,8 @@ jobs:
           hypervisor_vm_limit=${{ env.TEST_JOBS }}
           test_timeout=${{ env.LAUNCHER_TIMEOUT_MINUTES }}
           # TODO - can we run without library?
-          #[library]
-          #directPath=${{ github.workspace }}/anaconda/ui/webui/test/integration
+          [library]
+          directPath=${{ github.workspace }}/anaconda/ui/webui/test/integration
           EOF
 
       - name: Run webui integration tests
