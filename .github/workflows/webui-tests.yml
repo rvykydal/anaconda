@@ -111,7 +111,7 @@ jobs:
           #          ref: test-virt-install-pty
           repository: rhinstaller/permian
           path: permian
-          ref: devel
+          ref: awebui_update
 
       - name: Clone tplib repository
         uses: actions/checkout@v3
