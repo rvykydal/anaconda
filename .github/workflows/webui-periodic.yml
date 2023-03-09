@@ -82,7 +82,7 @@ jobs:
             --settings settings.ini \
             --override workflows.dry_run=False \
             run_event '{
-              "type":"github.pr.anaconda",
+              "type":"github.scheduled.preview",
               "InstallationSource":{
                 "base_repo_id": "bootiso",
                 "repos": {
