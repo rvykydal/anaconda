@@ -67,6 +67,8 @@ jobs:
           [AnacondaWebUI]
           #anaconda_repo=file://${{ github.workspace }}/anaconda
           anaconda_repo=https://github.com/rhinstaller/anaconda.git
+          cockpit_repo=https://github.com/rvykydal/cockpit.git
+          cockpit_branch=cockpit-webui
           hypervisor_vm_limit=${{ env.TEST_JOBS }}
           test_timeout=${{ env.LAUNCHER_TIMEOUT_MINUTES }}
           # TODO - can we run without library?
