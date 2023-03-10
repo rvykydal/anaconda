@@ -90,7 +90,7 @@ jobs:
                 "repos": {
                   "bootiso":{
                     "x86_64":{
-                      "os": "http://127.0.0.1:8000/tmpname2",
+                      "os": "http://10.0.79.236:8000/tmpname2",
                       "kernel": "images/pxeboot/vmlinuz",
                       "initrd": "images/pxeboot/initrd.img"
                     }
