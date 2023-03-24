@@ -70,6 +70,9 @@ jobs:
       # The timeout should be a few minutes less then the job's timeout-minutes
       # so that we get partial results and logs in case of the timeout.
       LAUNCHER_TIMEOUT_MINUTES: 60
+      # URL to the unpacked installation image
+      # TODO: use preview image
+      STATIC_REPO_URL: "http://10.43.136.2/users/rv/s2/webui-zveleba-f39"
 
     steps:
       # we post statuses manually as this does not run from a pull_request event
@@ -133,6 +136,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # TODO build the image from PR
+      - name: Set the image to be tested
+        id: prepare_repo
+        run:
+          if [ -n "${{ needs.pr-info.outputs.launch_args }}" ]; then
+            echo "repo_url=${{ needs.pr-info.outputs.launch_args }}" >> $GITHUB_OUTPUT
+          else
+            echo "repo_url=$STATIC_REPO_URL" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create Permian settings file
         working-directory: ./permian
         run: |
@@ -175,7 +188,7 @@ jobs:
                 "repos": {
                   "bootiso":{
                     "x86_64":{
-                      "os": "http://10.43.136.2/users/rv/s2/webui-zveleba-f39",
+                      "os": "${{ steps.prepare_repo.outputs.repo_url }}",
                       "kernel": "images/pxeboot/vmlinuz",
                       "initrd": "images/pxeboot/initrd.img"
                     }
