@@ -1,4 +1,5 @@
-# Run webui integration tests in a PR triggered by a "/webui-test <launch args>" comment from an organization member.
+# Run webui integration tests in a PR
+# Triggered by a "/webui-test <launch args>" comment from an organization member.
 name: webui-tests
 on:
   issue_comment:
@@ -60,12 +61,12 @@ jobs:
     needs: pr-info
     if: needs.pr-info.outputs.allowed_user == 'true' && needs.pr-info.outputs.launch_args != '' && ! contains(github.event.comment.body, '--waive')
     runs-on: [self-hosted, kstest-permian]
-    timeout-minutes: 300
+    timeout-minutes: 65
     env:
        STATUS_NAME: webui-test
        TARGET_BRANCH: ${{ needs.pr-info.outputs.base_ref }}
-       # TODO define better with proper value for runner
-       TEST_JOBS: 2
+      # ocp-master-xxl: 32GB RAM / 4GB RAM per VM
+       TEST_JOBS: 8
     steps:
       # we post statuses manually as this does not run from a pull_request event
       # https://developer.github.com/v3/repos/statuses/#create-a-status
@@ -103,25 +104,19 @@ jobs:
           git log --oneline -1 origin/${{ env.TARGET_BRANCH }}
           git rebase origin/${{ env.TARGET_BRANCH }}
 
+      # TODO: use main branch when the webui workflow is merged there
       - name: Clone Permian repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.3.0
         with:
-          #          repository: rvykydal/permian
-          #          path: permian
-          #          ref: test-virt-install-pty
           repository: rhinstaller/permian
           path: permian
-          ref: awebui_update
+          ref: devel
 
       - name: Clone tplib repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.3.0
         with:
           repository: rhinstaller/tplib
           path: tplib
-
-      - name: Update container images used here
-        run: |
-          sudo podman pull quay.io/rhinstaller/kstest-runner:latest
 
       - name: Post status building artifacts
         uses: octokit/request-action@v2.x
@@ -142,7 +137,11 @@ jobs:
           anaconda_repo=file://${{ github.workspace }}/anaconda
           cockpit_repo=https://github.com/rvykydal/cockpit.git
           cockpit_branch=cockpit-webui
+          # TODO - not working due to esbuild migration ?
+          #cockpit_repo=https://github.com/cockpit-project/cockpit.git
+          #cockpit_branch=287
           hypervisor_vm_limit=${{ env.TEST_JOBS }}
+          test_timeout=${{ env.LAUNCHER_TIMEOUT_MINUTES }}
           [library]
           directPath=${{ github.workspace }}/anaconda/ui/webui/test/integration
           EOF
@@ -181,7 +180,6 @@ jobs:
               }
             }'
 
-      # TODO split ?
       - name: Collect Permian logs
         if: always()
         uses: actions/upload-artifact@v2
