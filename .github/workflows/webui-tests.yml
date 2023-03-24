@@ -63,10 +63,10 @@ jobs:
     runs-on: [self-hosted, kstest-permian]
     timeout-minutes: 65
     env:
-       STATUS_NAME: webui-test
-       TARGET_BRANCH: ${{ needs.pr-info.outputs.base_ref }}
+      STATUS_NAME: webui-test
+      TARGET_BRANCH: ${{ needs.pr-info.outputs.base_ref }}
       # ocp-master-xxl: 32GB RAM / 4GB RAM per VM
-       TEST_JOBS: 8
+      TEST_JOBS: 8
       # The timeout should be a few minutes less then the job's timeout-minutes
       # so that we get partial results and logs in case of the timeout.
       LAUNCHER_TIMEOUT_MINUTES: 60
