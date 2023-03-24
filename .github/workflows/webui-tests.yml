@@ -139,7 +139,8 @@ jobs:
       # TODO build the image from PR
       - name: Set the image to be tested
         id: prepare_repo
-        run:
+        run: |
+          set -eux
           if [ -n "${{ needs.pr-info.outputs.launch_args }}" ]; then
             echo "repo_url=${{ needs.pr-info.outputs.launch_args }}" >> $GITHUB_OUTPUT
           else
