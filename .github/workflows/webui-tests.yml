@@ -67,6 +67,10 @@ jobs:
        TARGET_BRANCH: ${{ needs.pr-info.outputs.base_ref }}
       # ocp-master-xxl: 32GB RAM / 4GB RAM per VM
        TEST_JOBS: 8
+      # The timeout should be a few minutes less then the job's timeout-minutes
+      # so that we get partial results and logs in case of the timeout.
+      LAUNCHER_TIMEOUT_MINUTES: 60
+
     steps:
       # we post statuses manually as this does not run from a pull_request event
       # https://developer.github.com/v3/repos/statuses/#create-a-status
