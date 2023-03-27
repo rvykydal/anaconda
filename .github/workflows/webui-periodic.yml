@@ -41,7 +41,6 @@ jobs:
           fetch-depth: 0
           path: anaconda
 
-
       # TODO: use main branch when the webui workflow is merged there
       - name: Clone Permian repository
         uses: actions/checkout@v3.3.0
@@ -69,11 +68,11 @@ jobs:
           cat <<EOF > settings.ini
           [AnacondaWebUI]
           anaconda_repo=https://github.com/rhinstaller/anaconda.git
-          cockpit_repo=https://github.com/rvykydal/cockpit.git
-          cockpit_branch=cockpit-webui
+          #cockpit_repo=https://github.com/rvykydal/cockpit.git
+          #cockpit_branch=cockpit-webui
           # TODO - not working due to esbuild migration ?
-          #cockpit_repo=https://github.com/cockpit-project/cockpit.git
-          #cockpit_branch=287
+          cockpit_repo=https://github.com/cockpit-project/cockpit.git
+          cockpit_branch=287
           hypervisor_vm_limit=${{ env.TEST_JOBS }}
           test_timeout=${{ env.LAUNCHER_TIMEOUT_MINUTES }}
           # TODO - can we run without library?
