@@ -1,8 +1,8 @@
 # Run webui e2e tests periodically in Permian
 name: webui-periodic
 on:
-  schedule:
-    - cron: 0 23 * * *
+  #schedule:
+  #  - cron: 0 23 * * *
   workflow_dispatch:
 
 permissions:
