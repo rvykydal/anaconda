@@ -67,6 +67,7 @@ jobs:
         run: |
           cat <<EOF > settings.ini
           [AnacondaWebUI]
+          cockpit_branch=287
           hypervisor_vm_limit=${{ env.TEST_JOBS }}
           test_timeout=${{ env.LAUNCHER_TIMEOUT_MINUTES }}
           [library]
