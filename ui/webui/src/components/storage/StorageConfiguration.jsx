@@ -266,27 +266,27 @@ const GuidedPartitioning = ({ idPrefix, scenarios, setIsFormValid }) => {
     const scenarioItems = scenarios.map(scenario =>
         <DataListItem key={scenario.id}>
             <DataListItemRow>
+                <DataListAction key="radio">
+                    {!scenarioAvailability[scenario.id].available &&
+                    <Tooltip
+                      aria-live="polite"
+                      content={scenarioAvailability[scenario.id].shortHint}
+                      reference={() => document.getElementById(idPrefix + "-autopart-scenario-" + scenario.id)}
+                    />}
+                    <Radio
+                      id={idPrefix + "-autopart-scenario-" + scenario.id}
+                      value={scenario.id}
+                      name="autopart-scenario"
+                      label={scenario.label}
+                      isDisabled={!scenarioAvailability[scenario.id].available}
+                      isChecked={selectedScenario === scenario.id}
+                      onChange={() => onScenarioToggled(scenario.id)}
+                    />
+                </DataListAction>,
                 <DataListItemCells dataListCells={[
-                    <DataListAction key="radio">
-                        {!scenarioAvailability[scenario.id].available &&
-                        <Tooltip
-                          aria-live="polite"
-                          content={scenarioAvailability[scenario.id].shortHint}
-                          reference={() => document.getElementById(idPrefix + "-autopart-scenario-" + scenario.id)}
-                        />}
-                        <Radio
-                          id={idPrefix + "-autopart-scenario-" + scenario.id}
-                          value={scenario.id}
-                          name="autopart-scenario"
-                          label={scenario.label}
-                          isDisabled={!scenarioAvailability[scenario.id].available}
-                          isChecked={selectedScenario === scenario.id}
-                          onChange={() => onScenarioToggled(scenario.id)}
-                        />
-                    </DataListAction>,
                     <DataListCell key="more">
                         {scenarioAvailability[scenario.id].reason &&
-                        <Flex spaceItems={{ default: "spaceItems2xl" }}>
+                        <Flex spaceItems={{ default: "spaceItemsxl" }}>
                             <FlexItem />
                             <FlexItem>
                                 <HelperText>
@@ -298,15 +298,15 @@ const GuidedPartitioning = ({ idPrefix, scenarios, setIsFormValid }) => {
                             <FlexItem />
                         </Flex>}
                     </DataListCell>,
-                    <DataListAction key="details">
-                        <Button
-                          variant="link"
-                          isInline onClick={() => showScenarioDetails(scenario.id)}
-                        >
-                            {_("Learn more")}
-                        </Button>
-                    </DataListAction>,
                 ]} />
+                <DataListAction key="details">
+                    <Button
+                      variant="link"
+                      isInline onClick={() => showScenarioDetails(scenario.id)}
+                    >
+                        {_("Learn more")}
+                    </Button>
+                </DataListAction>
             </DataListItemRow>
         </DataListItem>
     );
