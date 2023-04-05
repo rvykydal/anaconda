@@ -121,6 +121,9 @@ class TestStorage(MachineCase):
         i.next(subpage=encrypt)
         # Disk Encryption / password screen
 
+        # Since the test is nondestructive, reset the backend state after the test
+        self.addCleanup(s.dbus_reset_partitioning)
+
         b.assert_pixels(
             "#app",
             "storage-step-password",
