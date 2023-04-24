@@ -88,7 +88,7 @@ class VirtInstallMachine(VirtMachine):
                 f"--initrd-inject {os.getcwd()}/test/ks.cfg "
                 "--extra-args 'inst.ks=file:/ks.cfg' "
                 "--disk size=15,format=qcow2 "
-                f"--location {os.getcwd()}/bots/images/{self.image}"
+                f"--location {os.getcwd()}/bots/images/{self.image},kernel=images/pxeboot/vmlinuz,initrd=images/pxeboot/initrd.img"
             )
             Machine.wait_boot(self)
 
