@@ -34,15 +34,13 @@ class Progress():
 
     @log_step(snapshot_after=True)
     def wait_done(self, timeout=1200):
-        timeout += time.time()
-        while timeout > time.time():
-            if self.browser.is_present(self._reboot_selector):
-                break
-            if self.browser.is_present('.pf-c-alert.pf-m-danger'):
-                raise AssertionError('Error during installation')
-            time.sleep(30)
-        else:
+        with self.browser.wait_timeout(timeout):
             self.browser.wait_visible(self._reboot_selector)
+
+        if self.browser.is_present('.pf-c-alert.pf-m-danger'):
+            raise AssertionError('Error during installation')
+
+        self.browser.wait_in_text("h2", "Successfully installed")
 
     @log_step()
     def reboot(self):
