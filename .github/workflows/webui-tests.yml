@@ -221,7 +221,7 @@ jobs:
             run_event '{
               "type":"github.pr.anaconda",
               "bootIso": {
-                "x86_64": "http://cobra02/users/rv/webui_repo/boot.e2e.88.iso"
+                "x86_64": "http://10.43.136.2/users/rv/webui_repo/boot.e2e.88.iso"
               }
             }'
 
