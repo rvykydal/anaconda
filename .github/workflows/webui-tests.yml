@@ -69,7 +69,7 @@ jobs:
   run:
     needs: pr-info
     if: needs.pr-info.outputs.allowed_user == 'true' && ! contains(github.event.comment.body, '--waive')
-    runs-on: [self-hosted, kstest]
+    runs-on: [self-hosted, kstest-permian]
     timeout-minutes: 65
     env:
       STATUS_NAME: Permian WebUI e2e
@@ -128,7 +128,8 @@ jobs:
         with:
           repository: rhinstaller/permian
           path: permian
-          ref: devel
+          #ref: devel
+          ref: awebui-bootiso
 
       - name: Clone tplib repository
         uses: actions/checkout@v3
