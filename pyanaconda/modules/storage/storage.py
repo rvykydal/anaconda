@@ -372,6 +372,7 @@ class StorageService(KickstartService):
         :returns: list of installation tasks
         """
         storage = self.storage
+        raise InvalidStorageError("TEST EXCEPTION")
 
         return [
             CreateStorageLayoutTask(storage),
