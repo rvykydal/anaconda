@@ -1,7 +1,7 @@
-name: WebUI Integration daily preview
-description: Runs all WebUI integration tests on preview image periodically
+name: WebUI end2end periodic tests
+description: Runs all WebUI end2end tests periodically
 point_person: rvykydal@redhat.com
-artifact_type: github.scheduled.preview
+artifact_type: github.webui.e2e.scheduled
 verified_by:
   test_cases:
     query: '"anaconda-webui" == tc.execution.type and "disabled" not in tc.tags'
