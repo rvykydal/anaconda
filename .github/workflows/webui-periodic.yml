@@ -8,8 +8,8 @@
 # Run webui e2e tests periodically in Permian
 name: Periodic webui integration tests
 on:
-  schedule:
-    - cron: 0 23 * * *
+  #  schedule:
+  #    - cron: 0 23 * * *
   workflow_dispatch:
 
 permissions:
@@ -18,7 +18,7 @@ permissions:
 jobs:
   scenario:
     name: Webui periodic
-    runs-on: [self-hosted, kstest]
+    runs-on: [self-hosted, kstest-test]
 
     timeout-minutes: 65
     env:
