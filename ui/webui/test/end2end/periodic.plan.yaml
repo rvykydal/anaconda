@@ -8,8 +8,5 @@ verified_by:
 configurations:
   - architecture: x86_64
     branch: master
-#reporting:
-#  - type: github-pr
-#    data:
-#      pr-check-name: "WebUI integration tests"
-#      pr-check-summary: "WebUI integration tests run on a pull request comment"
+reporting:
+  - type: xunit
