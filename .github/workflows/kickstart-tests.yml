@@ -92,7 +92,7 @@ jobs:
     needs: pr-info
     # only do this for Fedora for now; once we have RHEL 8/9 boot.iso builds working, also support these
     if: needs.pr-info.outputs.allowed_user == 'true' && needs.pr-info.outputs.launch_args != '' && ! contains(github.event.comment.body, '--waive')
-    runs-on: [self-hosted, kstest]
+    runs-on: [self-hosted, kstest-test]
     timeout-minutes: 300
     env:
        STATUS_NAME: kickstart-test
@@ -142,8 +142,9 @@ jobs:
       - name: Check out kickstart-tests
         uses: actions/checkout@v3
         with:
-          repository: rhinstaller/kickstart-tests
+          repository: rvykydal/kickstart-tests
           path: kickstart-tests
+          ref: add-skip-test-variable-for-on-pr-workflow
 
       - name: Generate test cases
         working-directory: ./kickstart-tests
@@ -188,49 +189,52 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build anaconda-iso-creator container image
-        working-directory: ./anaconda
-        run: |
-          # set static tag to avoid complications when looking what tag is used
-          sudo make -f ./Makefile.am anaconda-iso-creator-build CI_TAG=$CONTAINER_TAG
-
-      - name: Build anaconda-rpm container (for RPM build)
-        working-directory: ./anaconda
-        run: |
-          # set static tag to avoid complications when looking what tag is used
-          make -f ./Makefile.am anaconda-rpm-build CI_TAG=$CONTAINER_TAG
-
-      - name: Build Anaconda RPM files
-        working-directory: ./anaconda
-        run: |
-          # output of the build will be stored in ./result/build/01-rpm-build/*.rpm
-          make -f ./Makefile.am container-rpms-scratch CI_TAG=$CONTAINER_TAG
-          mkdir -p ${{ github.workspace }}/kickstart-tests/data/additional_repo/
-          cp -av ./result/build/01-rpm-build/*.rpm ${{ github.workspace }}/kickstart-tests/data/additional_repo/
-
+            #      - name: Build anaconda-iso-creator container image
+            #        working-directory: ./anaconda
+            #        run: |
+            #          # set static tag to avoid complications when looking what tag is used
+            #          sudo make -f ./Makefile.am anaconda-iso-creator-build CI_TAG=$CONTAINER_TAG
+            #
+            #      - name: Build anaconda-rpm container (for RPM build)
+            #        working-directory: ./anaconda
+            #        run: |
+            #          # set static tag to avoid complications when looking what tag is used
+            #          make -f ./Makefile.am anaconda-rpm-build CI_TAG=$CONTAINER_TAG
+            #
+            #      - name: Build Anaconda RPM files
+            #        working-directory: ./anaconda
+            #        run: |
+            #          # output of the build will be stored in ./result/build/01-rpm-build/*.rpm
+            #          make -f ./Makefile.am container-rpms-scratch CI_TAG=$CONTAINER_TAG
+            #          mkdir -p ${{ github.workspace }}/kickstart-tests/data/additional_repo/
+            #          cp -av ./result/build/01-rpm-build/*.rpm ${{ github.workspace }}/kickstart-tests/data/additional_repo/
+            #
       - name: Build boot.iso
         run: |
           mkdir -p images
-          # /var/tmp tmpfs speeds up lorax and avoids https://bugzilla.redhat.com/show_bug.cgi?id=1906364
-          sudo podman run -i --rm --privileged \
-            --tmpfs /var/tmp:rw,mode=1777 \
-            -v ${{ github.workspace }}/kickstart-tests/data/additional_repo:/anaconda-rpms:ro \
-            -v ${{ github.workspace }}/images:/images:z \
-            $ISO_BUILD_CONTAINER_NAME:$CONTAINER_TAG
+          curl -L https://download.fedoraproject.org/pub/fedora/linux/development/rawhide/Server/x86_64/os/images/boot.iso --output images/boot.iso
+          #          # /var/tmp tmpfs speeds up lorax and avoids https://bugzilla.redhat.com/show_bug.cgi?id=1906364
+          #          sudo podman run -i --rm --privileged \
+          #            --tmpfs /var/tmp:rw,mode=1777 \
+          #            -v ${{ github.workspace }}/kickstart-tests/data/additional_repo:/anaconda-rpms:ro \
+          #            -v ${{ github.workspace }}/images:/images:z \
+          #            $ISO_BUILD_CONTAINER_NAME:$CONTAINER_TAG
 
-      - name: Clean up after lorax
-        if: always()
-        run: |
-          # remove container images together with the container
-          sudo podman rmi -f $ISO_BUILD_CONTAINER_NAME:$CONTAINER_TAG || true
-          sudo podman rmi -f $RPM_BUILD_CONTAINER_NAME:$CONTAINER_TAG || true
-
+          #      - name: Clean up after lorax
+          #        if: always()
+          #        run: |
+          #          # remove container images together with the container
+          #          sudo podman rmi -f $ISO_BUILD_CONTAINER_NAME:$CONTAINER_TAG || true
+          #          sudo podman rmi -f $RPM_BUILD_CONTAINER_NAME:$CONTAINER_TAG || true
+          #
       - name: Generate query arguments for "${{ needs.pr-info.outputs.launch_args }}"
         id: generate_query
         working-directory: ./kickstart-tests
         run: |
           set -eux
+          source ./containers/runner/skip-testtypes
           PERMIAN_QUERY=$(scripts/generate-permian-query.py \
+             --skip-testtypes $SKIP_TESTTYPES_PR \
              --skip-testtypes ${{ needs.pr-info.outputs.skip_tests }} \
              ${{ needs.pr-info.outputs.launch_args }} )
           if [ $? == 0 ]; then
