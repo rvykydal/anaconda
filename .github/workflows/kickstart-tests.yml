@@ -113,7 +113,7 @@ jobs:
     needs: pr-info
     # only do this for Fedora for now; once we have RHEL 8/9 boot.iso builds working, also support these
     if: needs.pr-info.outputs.allowed_user == 'true' && needs.pr-info.outputs.launch_args != '' && ! contains(github.event.comment.body, '--waive')
-    runs-on: [self-hosted, kstest]
+    runs-on: [self-hosted, kstest-test]
     timeout-minutes: 300
     env:
        STATUS_NAME: kickstart-test
