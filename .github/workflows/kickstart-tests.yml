@@ -163,7 +163,8 @@ jobs:
       - name: Check out kickstart-tests
         uses: actions/checkout@v4
         with:
-          repository: rhinstaller/kickstart-tests
+          repository: rvykydal/kickstart-tests
+          ref: move-logic-from-gh-workflow
           path: kickstart-tests
 
       - name: Generate test cases
