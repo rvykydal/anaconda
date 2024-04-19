@@ -22,7 +22,11 @@
 # /kickstart-test --skip-testtypes gh123,gh765
 # ... run all the tests while skipping tests with given types (comma separated)
 #
-# By default all tests of type 'knownfailure' and 'manual' are skipped.
+# By default all disabled tests are skipped.
+# To force running disabled tests use --force option.
+#
+# /kickstart-test --force rpm-ostree
+# ... run rpm-ostree test even if it is disabled
 
 name: kickstart-tests
 on:
@@ -162,7 +166,7 @@ jobs:
         run: |
           LAUNCH_ARGS=$(scripts/generate-launch-args.py ${{ needs.pr-info.outputs.comment_args }} \
              --branch ${{ needs.pr-info.outputs.target_branch }} ) || RC=$?
-          if [ ${RC} == 0 ]; then
+          if [ -z ${RC} ] || [ ${RC} == 0 ]; then
             echo "Parsed launch arguments: $LAUNCH_ARGS"
           else
             echo "Parsing of the arguments failed. See the workflow file for usage."
