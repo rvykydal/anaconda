@@ -139,8 +139,9 @@ jobs:
       - name: Check out kickstart-tests
         uses: actions/checkout@v4
         with:
-          repository: rhinstaller/kickstart-tests
+          repository: rvykydal/kickstart-tests
           path: kickstart-tests
+          ref: kstest-pr
 
       - name: Generate test cases
         working-directory: ./kickstart-tests
