@@ -76,8 +76,15 @@ jobs:
         run: |
           # extract first line and cut out the "/kickstart-tests" first word
           ARGS=$(echo "$BODY" | sed -n '1 s/^[^ ]* *//p' | sed 's/[[:space:]]*$//')
+          OPTS="$(getopt -q -o "" --long kstest-pr: -- $ARGS)" || true
+          PR=${OPTS#" --kstest-pr '"}
+          PR=$(echo $PR | cut -d " " -f1)
+          PR=${PR%"'"}
+          PR=${PR%"--"}
           echo "workflow arguments are: $ARGS"
           echo "comment_args=${ARGS}" >> $GITHUB_OUTPUT
+          echo "kickstart-tests PR: $PR"
+          echo "kstest_pr=${PR}" >> $GITHUB_OUTPUT
 
     outputs:
       allowed_user: ${{ steps.check_user_perm.outputs.allowed_user }}
