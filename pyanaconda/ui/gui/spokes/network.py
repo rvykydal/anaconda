@@ -728,7 +728,7 @@ class NetworkControlBox(GObject.GObject):
         return model[itr][DEVICES_COLUMN_OBJECT]
 
     def add_dev_cfg(self, dev_cfg):
-        log.debug("adding device configuration: %s", dev_cfg)
+        log.debug("addding device configuration: %s", dev_cfg)
         row = [None, None, None, dev_cfg]
         self._update_row_from_object(row)
         self.dev_cfg_store.append(row)
