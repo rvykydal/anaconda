@@ -149,13 +149,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          PR_INFO=$(gh api \
-            -H "Accept: application/vnd.github+json" \
-            -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/rhinstaller/kickstart-tests/pulls/${{ needs.pr-info.outputs.kstest_pr }})
-          BASE_REF=$(echo $PR_INFO | jq .base.ref)
-          HEAD_REF=$(echo $PR_INFO | jq .head.ref)
-          HEAD_REPO=$(echo $PR_INFO | jq .head.repo.full_name)
+          if [ -n "${{ needs.pr-info.outputs.kstest_pr }}" ]; then
+            PR_INFO=$(gh api \
+              -H "Accept: application/vnd.github+json" \
+              -H "X-GitHub-Api-Version: 2022-11-28" \
+              /repos/rhinstaller/kickstart-tests/pulls/${{ needs.pr-info.outputs.kstest_pr }})
+            BASE_REF=$(echo $PR_INFO | jq .base.ref)
+            HEAD_REF=$(echo $PR_INFO | jq .head.ref)
+            HEAD_REPO=$(echo $PR_INFO | jq .head.repo.full_name)
+          else
+            BASE_REF=master
+            HEAD_REF=master
+            HEAD_REPO=rhinstaller/kickstart-tests
+          fi
           echo "kstest_base_ref=${BASE_REF}" >> $GITHUB_OUTPUT
           echo "kstest_head_ref=${HEAD_REF}" >> $GITHUB_OUTPUT
           echo "kstest_head_repo=${HEAD_REPO}" >> $GITHUB_OUTPUT
