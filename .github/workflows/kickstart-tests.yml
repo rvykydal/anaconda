@@ -170,6 +170,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.get_kstest_pr.outputs.kstest_head_repo }}
+          fetch-depth: 0
           path: kickstart-tests
           ref: ${{ steps.get_kstest_pr.outputs.kstest_head_ref }}
 
