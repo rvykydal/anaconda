@@ -173,6 +173,16 @@ jobs:
           path: kickstart-tests
           ref: ${{ steps.get_kstest_pr.outputs.kstest_head_ref }}
 
+      - name: Rebase to the upstream kickstart-tests target
+        working-directory: ./kickstart-tests
+        run: |
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git remote add upstream https://github.com/rhinstaller/kickstart-tests
+          git fetch upstream
+          git log --oneline -1 upstream/${{ steps.get_kstest_pr.outputs.kstest_base_ref }}
+          git rebase upstream/${{ steps.get_kstest_pr.outputs.kstest_base_ref }}
+
       - name: Generate test cases
         working-directory: ./kickstart-tests
         run: scripts/generate-testcases.py -t ./testlib/test_cases/kstest-template.tc.yaml.j2 . -o ./testlib/test_cases
