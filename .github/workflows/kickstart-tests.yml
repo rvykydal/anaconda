@@ -149,11 +149,17 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          set -eux
           PR_INFO=$(gh api \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/rhinstaller/kickstart-tests/pulls/${{ needs.pr-info.outputs.kstest_pr }})
-          echo $PR_INFO
+          BASE_REF=$(echo $PR_INFO | jq .base.ref)
+          HEAD_REF=$(echo $PR_INFO | jq .head.ref)
+          HEAD_REPO=$(echo $PR_INFO | jq .head.repo.full_name)
+          echo "kstest_base_ref=${BASE_REF}" >> $GITHUB_OUTPUT
+          echo "kstest_head_ref=${HEAD_REF}" >> $GITHUB_OUTPUT
+          echo "kstest_head_repo=${HEAD_REPO}" >> $GITHUB_OUTPUT
 
       - name: Check out kickstart-tests
         uses: actions/checkout@v4
