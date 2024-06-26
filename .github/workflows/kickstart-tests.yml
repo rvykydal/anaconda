@@ -154,9 +154,9 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               -H "X-GitHub-Api-Version: 2022-11-28" \
               /repos/rhinstaller/kickstart-tests/pulls/${{ needs.pr-info.outputs.kstest_pr }})
-            BASE_REF=$(echo $PR_INFO | jq .base.ref)
-            HEAD_REF=$(echo $PR_INFO | jq .head.ref)
-            HEAD_REPO=$(echo $PR_INFO | jq .head.repo.full_name)
+            BASE_REF=$(echo $PR_INFO | jq -r .base.ref)
+            HEAD_REF=$(echo $PR_INFO | jq -r .head.ref)
+            HEAD_REPO=$(echo $PR_INFO | jq -r .head.repo.full_name)
           else
             BASE_REF=master
             HEAD_REF=master
@@ -169,10 +169,8 @@ jobs:
       - name: Check out kickstart-tests
         uses: actions/checkout@v4
         with:
-          #repository: rvykydal/kickstart-tests
           repository: ${{ steps.get_kstest_pr.outputs.kstest_head_repo }}
           path: kickstart-tests
-          #ref: kstest-pr
           ref: ${{ steps.get_kstest_pr.outputs.kstest_head_ref }}
 
       - name: Generate test cases
