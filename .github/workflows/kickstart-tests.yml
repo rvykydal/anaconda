@@ -211,6 +211,7 @@ jobs:
           PLATFORM=$(scripts/generate-permian-query.py --print-platform $LAUNCH_ARGS)
           echo "Generated platform: $PLATFORM"
           echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+          exit 3
 
       - name: Ensure http proxy is running
         run: sudo kickstart-tests/containers/squid.sh start
