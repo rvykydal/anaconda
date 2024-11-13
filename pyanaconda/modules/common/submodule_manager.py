@@ -17,6 +17,10 @@
 # License and may only be used or replicated with the express permission of
 # Red Hat, Inc.
 #
+
+from pyanaconda.anaconda_loggers import get_module_logger
+log = get_module_logger(__name__)
+
 __all__ = ["SubmoduleManager"]
 
 class SubmoduleManager:
@@ -39,7 +43,9 @@ class SubmoduleManager:
 
     def process_kickstart(self, data):
         """Process the kickstart data in all modules."""
+        log.debug("DDDDD storage modules: %s", self._modules)
         for module in self._modules:
+            log.debug("DDDDD processing module: %s", module)
             module.process_kickstart(data)
 
     def setup_kickstart(self, data):
