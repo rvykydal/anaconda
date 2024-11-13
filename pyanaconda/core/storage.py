@@ -171,6 +171,10 @@ def device_matches(spec, devicetree=None, disks_only=False):
     # the device specifications might contain multiple "sub specs" separated by a |
     # - the specs are processed from left to right
     for single_spec in spec.split("|"):
+        if single_spec[0] == "!":
+            log.debug("DDDDD Not matching '%s'", single_spec[1:])
+            matches.append(single_spec[1:])
+            continue
         full_spec = single_spec
         if not full_spec.startswith("/dev/"):
             full_spec = os.path.normpath("/dev/" + full_spec)
