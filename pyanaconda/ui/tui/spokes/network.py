@@ -179,7 +179,8 @@ class WiredTUIConfigurationData():
                 elif NM.utils_ipaddr_valid(socket.AF_INET, ns):
                     s_ip4.add_dns(ns)
                 else:
-                    log.error("IP address %s is not valid", ns)
+                    log.debug("IP version for --nameserver value %s not determined, using IPv4", ns)
+                    s_ip4.add_dns(ns)
 
         s_con = connection.get_setting_connection()
         s_con.set_property(NM.SETTING_CONNECTION_AUTOCONNECT, self.onboot)
