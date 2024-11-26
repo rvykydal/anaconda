@@ -18,6 +18,7 @@
 # Red Hat, Inc.
 #
 from pyanaconda.core.dbus import DBus
+from pyanaconda.core.signal import Signal
 from pykickstart.parser import Certificate
 from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.modules.common.base import KickstartBaseModule
@@ -27,12 +28,14 @@ from pyanaconda.modules.security.certificates.certificates_interface import Cert
 
 log = get_module_logger(__name__)
 
+
 class CertificatesModule(KickstartBaseModule):
     """The certificates installation module."""
 
     def __init__(self):
         super().__init__()
 
+        self.certificates_changed = Signal()
         self._certificates = []
 
     def publish(self):
@@ -42,10 +45,27 @@ class CertificatesModule(KickstartBaseModule):
     def process_kickstart(self, data):
         """Process the kickstart data."""
         for cert in data.certificates:
-            self._certificates.append(CertificateData(cert.name, cert.cert, cert.path))
+            cert_data = CertificateData()
+            cert_data.name = cert.name
+            cert_data.cert = cert.cert
+            if cert.path:
+                cert_data.path = cert.path
+            self._certificates.append(cert_data)
+        self.certificates_changed.emit()
 
     def setup_kickstart(self, data):
         """Setup the kickstart data."""
         for cert in self._certificates:
             cert_ksdata = Certificate(cert=[cert.cert], name=cert.name, path=cert.path)
             data.certificates.append(cert_ksdata)
+
+    @property
+    def certificates(self):
+        """Return the certificates."""
+        return self._certificates
+
+    def set_certificates(self, certificates):
+        """Set the certificates."""
+        self._certificates = certificates
+        self.certificates_changed.emit()
+        log.debug("Certificates is set to %s.", certificates)
