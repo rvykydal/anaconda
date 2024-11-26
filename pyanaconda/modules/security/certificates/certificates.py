@@ -17,6 +17,7 @@
 # License and may only be used or replicated with the express permission of
 # Red Hat, Inc.
 #
+from pyanaconda.core.dbus import DBus
 from pykickstart.parser import Certificate
 from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.modules.common.base import KickstartBaseModule
@@ -30,6 +31,8 @@ class CertificatesModule(KickstartBaseModule):
     """The certificates installation module."""
 
     def __init__(self):
+        super().__init__()
+
         self._certificates = []
 
     def publish(self):

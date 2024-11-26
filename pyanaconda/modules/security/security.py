@@ -99,7 +99,7 @@ class SecurityService(KickstartService):
 
     def setup_kickstart(self, data):
         """Set up the kickstart data."""
-        self._modules.setup_kickstart(data.certificates)
+        self._modules.setup_kickstart(data)
 
         if self.selinux != SELinuxMode.DEFAULT:
             data.selinux.selinux = self.selinux.value
