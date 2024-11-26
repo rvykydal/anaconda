@@ -44,14 +44,15 @@ class CertificatesModule(KickstartBaseModule):
 
     def process_kickstart(self, data):
         """Process the kickstart data."""
+        certificates = []
         for cert in data.certificates:
             cert_data = CertificateData()
             cert_data.name = cert.name
             cert_data.cert = cert.cert
             if cert.path:
                 cert_data.path = cert.path
-            self._certificates.append(cert_data)
-        self.certificates_changed.emit()
+            certificates.append(cert_data)
+        self.set_certificates(certificates)
 
     def setup_kickstart(self, data):
         """Setup the kickstart data."""

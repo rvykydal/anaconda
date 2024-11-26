@@ -24,6 +24,7 @@ from pykickstart.sections import Section
 from pyanaconda.modules.boss.kickstart_manager.element import KickstartElement,\
     TrackedKickstartElements
 
+
 VALID_SECTIONS_ANACONDA = [
     "%certificate", "%pre", "%pre-install", "%post", "%onerror", "%traceback", "%packages",
     "%addon"
