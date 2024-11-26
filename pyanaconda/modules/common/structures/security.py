@@ -21,13 +21,14 @@ from dasbus.typing import *  # pylint: disable=wildcard-import
 
 __all__ = ["CertificateData"]
 
+
 class CertificateData(DBusData):
     """Structure for the certificate data."""
 
-    def __init__(self, name: Str, cert: Str, path: Str):
-        self.name = name
-        self.cert = cert
-        self.path = path
+    def __init__(self):
+        self._name = ""
+        self._cert = ""
+        self._path = ""
 
     @property
     def name(self) -> Str:

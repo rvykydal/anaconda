@@ -24,6 +24,7 @@ from pyanaconda.modules.common.base import KickstartModuleInterfaceTemplate
 from pyanaconda.modules.common.constants.objects import CERTIFICATES
 from pyanaconda.modules.common.structures.security import CertificateData
 
+
 @dbus_interface(CERTIFICATES.interface_name)
 class CertificatesInterface(KickstartModuleInterfaceTemplate):
     """DBus interface for the certificate installation module."""
