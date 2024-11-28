@@ -19,13 +19,45 @@
 #
 import unittest
 
+from textwrap import dedent
+
 from dasbus.typing import *  # pylint: disable=wildcard-import
 
 from pyanaconda.modules.common.constants.objects import CERTIFICATES
 from pyanaconda.modules.common.structures.security import CertificateData
 from pyanaconda.modules.security.certificates.certificates import CertificatesModule
 from pyanaconda.modules.security.certificates.certificates_interface import CertificatesInterface
-from tests.unit_tests.pyanaconda_tests import check_dbus_property
+from pyanaconda.modules.security.certificates.installation import ImportCertificatesTask
+from tests.unit_tests.pyanaconda_tests import check_dbus_property, check_task_creation, \
+    patch_dbus_publish_object
+
+
+CERT1_CERT = dedent("""
+-----BEGIN CERTIFICATE-----
+MIIBjTCCATOgAwIBAgIUWR5HO3v/0I80Ne0jQWVZFODuWLEwCgYIKoZIzj0EAwIw
+FDESMBAGA1UEAwwJUlZURVNUIENBMB4XDTI0MTEyMDEzNTk1N1oXDTM0MTExODEz
+NTk1N1owFDESMBAGA1UEAwwJUlZURVNUIENBMFkwEwYHKoZIzj0CAQYIKoZIzj0D
+AQcDQgAELghFKGEgS8+5/2nx50W0xOqTrKc2Jz/rD/jfL0m4z4fkeAslCOkIKv74
+0wfBXMngxi+OF/b3Vh8FmokuNBQO5qNjMGEwHQYDVR0OBBYEFOJarl9Xkd13sLzI
+mHqv6aESlvuCMB8GA1UdIwQYMBaAFOJarl9Xkd13sLzImHqv6aESlvuCMA8GA1Ud
+EwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMCA0gAMEUCIAet
+7nyre42ReoRKoyHWLDsQmQDzoyU3FQdC0cViqOtrAiEAxYIL+XTTp7Xy9RNE4Xg7
+yNWXfdraC/AfMM8fqsxlVJM=
+-----END CERTIFICATE-----
+""")
+CERT2_CERT = dedent("""
+-----BEGIN CERTIFICATE-----
+MIIBkTCCATegAwIBAgIUN6r4TjFJqP/TS6U25iOGL2Wt/6kwCgYIKoZIzj0EAwIw
+FjEUMBIGA1UEAwwLUlZURVNUIDIgQ0EwHhcNMjQxMTIwMTQwMzIxWhcNMzQxMTE4
+MTQwMzIxWjAWMRQwEgYDVQQDDAtSVlRFU1QgMiBDQTBZMBMGByqGSM49AgEGCCqG
+SM49AwEHA0IABOtXBMEhtcH43dIDHkelODXrSWQQ8PW7oo8lQUEYTNAL1rpWJJDD
+1u+bpLe62Z0kzYK0CpeKuXFfwGrzx7eA6vajYzBhMB0GA1UdDgQWBBStV+z7SZSi
+YXlamkx+xjm/W1sMSTAfBgNVHSMEGDAWgBStV+z7SZSiYXlamkx+xjm/W1sMSTAP
+BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOPQQDAgNIADBF
+AiEAkQjETC3Yx2xOkA+R0/YR+R+QqpR8p1fd/cGKWFUYxSoCIEuDJcfvPJfFYdzn
+CFOCLuymezWz+1rdIXLU1+XStLuB
+-----END CERTIFICATE-----
+""")
 
 
 class CertificatesInterfaceTestCase(unittest.TestCase):
@@ -47,12 +79,12 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         """Test the certificates property."""
         certs_value = [
             {
-                'cert': get_variant(Str, '-----BEGIN CERTIFICATE-----\nMIIDazCCAlOgAwIBAgIJAJzQz1Zz1Zz1MA0GCSqGSIb3DQEBCwUAMIGVMQswCQYD\n-----END CERTIFICATE-----'),
+                'cert': get_variant(Str, CERT1_CERT),
                 'name': get_variant(Str, 'rvtest.pem'),
                 'path': get_variant(Str, '/etc/pki/ca-trust/extracted/pem')
             },
             {
-                'cert': get_variant(Str, '-----BEGIN CERTIFICATE-----\nXIIBkTCCATegAwIBAgIUN6r4TjFJqP/TS6U25iOGL2Wt/6kwCgYIKoZIzj0EAwIw\n-----END CERTIFICATE-----'),
+                'cert': get_variant(Str, CERT2_CERT),
                 'name': get_variant(Str, 'rvtest2.pem'),
                 'path': get_variant(Str, '')
             }
@@ -61,3 +93,38 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
             "Certificates",
             certs_value,
         )
+
+    @patch_dbus_publish_object
+    def test_import_with_task_default(self, publisher):
+        """Test the ImportWithTask method"""
+        task_path = self.certificates_interface.ImportWithTask()
+        obj = check_task_creation(task_path, publisher, ImportCertificatesTask)
+        assert obj.implementation._sysroot == "/"
+        assert obj.implementation._certificates == []
+
+    def _get_2_test_certs(self):
+        cert1 = CertificateData()
+        cert1.name = "cert1.pem"
+        cert1.cert = CERT1_CERT
+        cert1.path = "/cert/drop/directory1"
+        cert2 = CertificateData()
+        cert2.name = "cert2.pem"
+        cert2.cert = CERT2_CERT
+        cert2.path = "/cert/drop/directory2"
+        return(cert1, cert2)
+
+    @patch_dbus_publish_object
+    def test_import_with_task_configured(self, publisher):
+        """Test the ImportWithTask method"""
+        cert1, cert2 = self._get_2_test_certs()
+
+        self.certificates_interface.Certificates = CertificateData.to_structure_list(
+            [cert1, cert2]
+        )
+        task_path = self.certificates_interface.ImportWithTask()
+        obj = check_task_creation(task_path, publisher, ImportCertificatesTask)
+        assert obj.implementation._sysroot == "/"
+        assert len(obj.implementation._certificates) == 2
+        t_cert1, t_cert2 = obj.implementation._certificates
+        assert (t_cert1.name, t_cert1.path, t_cert1.cert) == (cert1.name, cert1.path, cert1.cert)
+        assert (t_cert2.name, t_cert2.path, t_cert2.cert) == (cert2.name, cert2.path, cert2.cert)
