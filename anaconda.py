@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-#
+# test
 # anaconda: The Red Hat Linux Installation program
 #
 # Copyright (C) 1999-2013
