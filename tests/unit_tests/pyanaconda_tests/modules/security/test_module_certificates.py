@@ -17,6 +17,8 @@
 #
 # Red Hat Author(s): Radek Vykydal <rvykydal@redhat.com>
 #
+import os
+import tempfile
 import unittest
 
 from textwrap import dedent
@@ -32,8 +34,7 @@ from tests.unit_tests.pyanaconda_tests import check_dbus_property, check_task_cr
     patch_dbus_publish_object
 
 
-CERT1_CERT = dedent("""
------BEGIN CERTIFICATE-----
+CERT1_CERT = dedent("""-----BEGIN CERTIFICATE-----
 MIIBjTCCATOgAwIBAgIUWR5HO3v/0I80Ne0jQWVZFODuWLEwCgYIKoZIzj0EAwIw
 FDESMBAGA1UEAwwJUlZURVNUIENBMB4XDTI0MTEyMDEzNTk1N1oXDTM0MTExODEz
 NTk1N1owFDESMBAGA1UEAwwJUlZURVNUIENBMFkwEwYHKoZIzj0CAQYIKoZIzj0D
@@ -43,10 +44,9 @@ mHqv6aESlvuCMB8GA1UdIwQYMBaAFOJarl9Xkd13sLzImHqv6aESlvuCMA8GA1Ud
 EwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEGMAoGCCqGSM49BAMCA0gAMEUCIAet
 7nyre42ReoRKoyHWLDsQmQDzoyU3FQdC0cViqOtrAiEAxYIL+XTTp7Xy9RNE4Xg7
 yNWXfdraC/AfMM8fqsxlVJM=
------END CERTIFICATE-----
-""")
-CERT2_CERT = dedent("""
------BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----""")
+
+CERT2_CERT = dedent("""-----BEGIN CERTIFICATE-----
 MIIBkTCCATegAwIBAgIUN6r4TjFJqP/TS6U25iOGL2Wt/6kwCgYIKoZIzj0EAwIw
 FjEUMBIGA1UEAwwLUlZURVNUIDIgQ0EwHhcNMjQxMTIwMTQwMzIxWhcNMzQxMTE4
 MTQwMzIxWjAWMRQwEgYDVQQDDAtSVlRFU1QgMiBDQTBZMBMGByqGSM49AgEGCCqG
@@ -56,8 +56,7 @@ YXlamkx+xjm/W1sMSTAfBgNVHSMEGDAWgBStV+z7SZSiYXlamkx+xjm/W1sMSTAP
 BgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBBjAKBggqhkjOPQQDAgNIADBF
 AiEAkQjETC3Yx2xOkA+R0/YR+R+QqpR8p1fd/cGKWFUYxSoCIEuDJcfvPJfFYdzn
 CFOCLuymezWz+1rdIXLU1+XStLuB
------END CERTIFICATE-----
-""")
+-----END CERTIFICATE-----""")
 
 
 class CertificatesInterfaceTestCase(unittest.TestCase):
@@ -128,3 +127,27 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         t_cert1, t_cert2 = obj.implementation._certificates
         assert (t_cert1.name, t_cert1.path, t_cert1.cert) == (cert1.name, cert1.path, cert1.cert)
         assert (t_cert2.name, t_cert2.path, t_cert2.cert) == (cert2.name, cert2.path, cert2.cert)
+
+    def test_import_certificates_task_files(self):
+        """Test the ImportCertificatesTask task"""
+        cert1, cert2 = self._get_2_test_certs()
+
+        with tempfile.TemporaryDirectory() as sysroot:
+            # cert1 has existing path
+            os.makedirs(sysroot+cert1.path)
+            # cert2 has non-existing path
+
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert1, cert2],
+            ).run()
+
+            cert1_file = sysroot + cert1.path + "/" + cert1.name
+            with open(cert1_file) as f:
+                # Anaconda adds `\n` to the value when dumping it
+                assert f.read() == cert1.cert+'\n'
+
+            cert2_file = sysroot + cert2.path + "/" + cert2.name
+            with open(cert2_file) as f:
+                # Anaconda adds `\n` to the value when dumping it
+                assert f.read() == cert2.cert+'\n'
