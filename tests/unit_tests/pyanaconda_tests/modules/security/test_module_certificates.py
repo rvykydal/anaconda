@@ -128,6 +128,30 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         assert (t_cert1.name, t_cert1.path, t_cert1.cert) == (cert1.name, cert1.path, cert1.cert)
         assert (t_cert2.name, t_cert2.path, t_cert2.cert) == (cert2.name, cert2.path, cert2.cert)
 
+    @patch_dbus_publish_object
+    def test_install_with_task_default(self, publisher):
+        """Test the InstallWithTask method"""
+        task_path = self.certificates_interface.InstallWithTask()
+        obj = check_task_creation(task_path, publisher, ImportCertificatesTask)
+        assert obj.implementation._sysroot == "/mnt/sysroot"
+        assert obj.implementation._certificates == []
+
+    @patch_dbus_publish_object
+    def test_install_with_task_configured(self, publisher):
+        """Test the InstallWithTask method"""
+        cert1, cert2 = self._get_2_test_certs()
+
+        self.certificates_interface.Certificates = CertificateData.to_structure_list(
+            [cert1, cert2]
+        )
+        task_path = self.certificates_interface.InstallWithTask()
+        obj = check_task_creation(task_path, publisher, ImportCertificatesTask)
+        assert obj.implementation._sysroot == "/mnt/sysroot"
+        assert len(obj.implementation._certificates) == 2
+        t_cert1, t_cert2 = obj.implementation._certificates
+        assert (t_cert1.name, t_cert1.path, t_cert1.cert) == (cert1.name, cert1.path, cert1.cert)
+        assert (t_cert2.name, t_cert2.path, t_cert2.cert) == (cert2.name, cert2.path, cert2.cert)
+
     def test_import_certificates_task_files(self):
         """Test the ImportCertificatesTask task"""
         cert1, cert2 = self._get_2_test_certs()
