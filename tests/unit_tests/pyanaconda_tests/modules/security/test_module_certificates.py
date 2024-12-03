@@ -199,3 +199,23 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
             with open(cert2_file) as f:
                 # Anaconda adds `\n` to the value when dumping it
                 assert f.read() == cert2.cert+'\n'
+
+    def test_import_certificates_task_existing_file(self):
+        """Test the ImportCertificatesTask task with existing file to be imported"""
+        cert1, _ = self._get_2_test_certs()
+
+        with tempfile.TemporaryDirectory() as sysroot:
+            # certificate file to be dumped already exists
+            os.makedirs(sysroot+cert1.path)
+            cert1_file = sysroot + cert1.path + "/" + cert1.name
+            open(cert1_file, 'w')
+
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert1],
+            ).run()
+
+            cert1_file = sysroot + cert1.path + "/" + cert1.name
+            with open(cert1_file) as f:
+                # Anaconda adds `\n` to the value when dumping it
+                assert f.read() == cert1.cert+'\n'
