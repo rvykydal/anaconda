@@ -19,6 +19,7 @@ import os
 
 from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.modules.common.task import Task
+from pyanaconda.modules.common.errors.installation import SecurityInstallationError
 from pyanaconda.core.path import make_directories, join_paths
 
 log = get_module_logger(__name__)
@@ -46,6 +47,12 @@ class ImportCertificatesTask(Task):
 
     def _dump_certificate(self, cert, root):
         """Dump the certificate into specified file and directory."""
+
+        if not cert.path:
+            raise SecurityInstallationError(
+                "Certificate destination is missing for {}".format(cert.name)
+            )
+
         dst_dir = join_paths(root, cert.path)
         if not os.path.exists(dst_dir):
             log.debug("Path %s for certificate does not exist, creating.", dst_dir)

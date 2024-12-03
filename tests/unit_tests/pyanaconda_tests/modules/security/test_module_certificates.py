@@ -27,6 +27,7 @@ from dasbus.typing import *  # pylint: disable=wildcard-import
 
 from pyanaconda.modules.common.constants.objects import CERTIFICATES
 from pyanaconda.modules.common.structures.security import CertificateData
+from pyanaconda.modules.common.errors.installation import SecurityInstallationError
 from pyanaconda.modules.security.certificates.certificates import CertificatesModule
 from pyanaconda.modules.security.certificates.certificates_interface import CertificatesInterface
 from pyanaconda.modules.security.certificates.installation import ImportCertificatesTask
@@ -219,3 +220,15 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
             with open(cert1_file) as f:
                 # Anaconda adds `\n` to the value when dumping it
                 assert f.read() == cert1.cert+'\n'
+
+    def test_import_certificates_missing_destination(self):
+        """Test the ImportCertificatesTask task with missing destination"""
+        cert1, _ = self._get_2_test_certs()
+        cert1.path = ''
+
+        with tempfile.TemporaryDirectory() as sysroot:
+            with self.assertRaises(SecurityInstallationError):
+                ImportCertificatesTask(
+                    sysroot=sysroot,
+                    certificates=[cert1],
+                ).run()
