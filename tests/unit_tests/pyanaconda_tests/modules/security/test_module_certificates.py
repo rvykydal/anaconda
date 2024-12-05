@@ -193,15 +193,17 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
                 certificates=[cert1, cert2],
             ).run()
 
-            cert1_file = sysroot + cert1.path + "/" + cert1.name
-            with open(cert1_file) as f:
-                # Anaconda adds `\n` to the value when dumping it
-                assert f.read() == cert1.cert+'\n'
+            self._check_cert_file(cert1, sysroot)
+            self._check_cert_file(cert2, sysroot)
 
-            cert2_file = sysroot + cert2.path + "/" + cert2.name
-            with open(cert2_file) as f:
+    def _check_cert_file(self, cert, sysroot, missing=False):
+        cert_file = sysroot + cert.path + "/" + cert.name
+        if missing:
+            assert os.path.exists(cert_file) is False
+        else:
+            with open(cert_file) as f:
                 # Anaconda adds `\n` to the value when dumping it
-                assert f.read() == cert2.cert+'\n'
+                assert f.read() == cert.cert+'\n'
 
     def test_import_certificates_task_existing_file(self):
         """Test the ImportCertificatesTask task with existing file to be imported"""
@@ -218,10 +220,7 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
                 certificates=[cert1],
             ).run()
 
-            cert1_file = sysroot + cert1.path + "/" + cert1.name
-            with open(cert1_file) as f:
-                # Anaconda adds `\n` to the value when dumping it
-                assert f.read() == cert1.cert+'\n'
+            self._check_cert_file(cert1, sysroot)
 
     def test_import_certificates_missing_destination(self):
         """Test the ImportCertificatesTask task with missing destination"""
@@ -241,36 +240,28 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as sysroot:
 
-            # non pre-install phase
+            # non pre-install phase => install
             ImportCertificatesTask(
                 sysroot=sysroot,
                 certificates=[cert1],
-                payload_type=PAYLOAD_TYPE_DNF,
+                payload_type=PAYLOAD_TYPE_LIVE_OS,
             ).run()
+            self._check_cert_file(cert1, sysroot)
 
-            cert1_file = sysroot + cert1.path + "/" + cert1.name
-            with open(cert1_file) as f:
-                # Anaconda adds `\n` to the value when dumping it
-                assert f.read() == cert1.cert+'\n'
-
-            cert2_file = sysroot + cert2.path + "/" + cert2.name
-
-            # pre-install phase, payload dnf => don't run
-            assert os.path.exists(cert2_file) is False
+            # pre-install phase, payload dnf => don't install
             ImportCertificatesTask(
                 sysroot=sysroot,
                 certificates=[cert2],
                 payload_type=PAYLOAD_TYPE_LIVE_OS,
                 phase=INSTALLATION_PHASE_PREINSTALL
             ).run()
-            assert os.path.exists(cert2_file) is False
+            self._check_cert_file(cert2, sysroot, missing=True)
 
-            # pre-install phase, payload dnf => run
-            assert os.path.exists(cert2_file) is False
+            # pre-install phase, payload dnf => install
             ImportCertificatesTask(
                 sysroot=sysroot,
                 certificates=[cert2],
                 payload_type=PAYLOAD_TYPE_DNF,
                 phase=INSTALLATION_PHASE_PREINSTALL
             ).run()
-            assert os.path.exists(cert2_file) is True
+            self._check_cert_file(cert2, sysroot)
