@@ -26,7 +26,8 @@ from textwrap import dedent
 from dasbus.typing import *  # pylint: disable=wildcard-import
 
 from pyanaconda.modules.common.constants.objects import CERTIFICATES
-from pyanaconda.core.constants import PAYLOAD_TYPE_DNF, PAYLOAD_TYPE_LIVE_OS
+from pyanaconda.core.constants import PAYLOAD_TYPE_DNF, PAYLOAD_TYPE_LIVE_OS, \
+    INSTALLATION_PHASE_PREINSTALL
 from pyanaconda.modules.common.structures.security import CertificateData
 from pyanaconda.modules.common.errors.installation import SecurityInstallationError
 from pyanaconda.modules.security.certificates.certificates import CertificatesModule
@@ -260,7 +261,7 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
                 sysroot=sysroot,
                 certificates=[cert2],
                 payload_type=PAYLOAD_TYPE_LIVE_OS,
-                phase="pre-install"
+                phase=INSTALLATION_PHASE_PREINSTALL
             ).run()
             assert os.path.exists(cert2_file) is False
 
@@ -270,6 +271,6 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
                 sysroot=sysroot,
                 certificates=[cert2],
                 payload_type=PAYLOAD_TYPE_DNF,
-                phase="pre-install"
+                phase=INSTALLATION_PHASE_PREINSTALL
             ).run()
             assert os.path.exists(cert2_file) is True

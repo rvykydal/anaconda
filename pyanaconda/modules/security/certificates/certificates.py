@@ -19,6 +19,7 @@
 #
 from pyanaconda.core.dbus import DBus
 from pyanaconda.core.signal import Signal
+from pyanaconda.core.constants import INSTALLATION_PHASE_PREINSTALL
 from pyanaconda.core.configuration.anaconda import conf
 from pykickstart.parser import Certificate
 from pyanaconda.anaconda_loggers import get_module_logger
@@ -105,5 +106,5 @@ class CertificatesModule(KickstartBaseModule):
             sysroot=conf.target.system_root,
             certificates=self.certificates,
             payload_type=payload_type,
-            phase="pre-install",
+            phase=INSTALLATION_PHASE_PREINSTALL,
         )
