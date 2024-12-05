@@ -26,6 +26,7 @@ from textwrap import dedent
 from dasbus.typing import *  # pylint: disable=wildcard-import
 
 from pyanaconda.modules.common.constants.objects import CERTIFICATES
+from pyanaconda.core.constants import PAYLOAD_TYPE_DNF, PAYLOAD_TYPE_LIVE_OS
 from pyanaconda.modules.common.structures.security import CertificateData
 from pyanaconda.modules.common.errors.installation import SecurityInstallationError
 from pyanaconda.modules.security.certificates.certificates import CertificatesModule
@@ -232,3 +233,43 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
                     sysroot=sysroot,
                     certificates=[cert1],
                 ).run()
+
+    def test_import_certificates_pre_nondnf_payload(self):
+        """Test the ImportCertificatesTask in pre install with non-dnf payload"""
+        cert1, cert2 = self._get_2_test_certs()
+
+        with tempfile.TemporaryDirectory() as sysroot:
+
+            # non pre-install phase
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert1],
+                payload_type=PAYLOAD_TYPE_DNF,
+            ).run()
+
+            cert1_file = sysroot + cert1.path + "/" + cert1.name
+            with open(cert1_file) as f:
+                # Anaconda adds `\n` to the value when dumping it
+                assert f.read() == cert1.cert+'\n'
+
+            cert2_file = sysroot + cert2.path + "/" + cert2.name
+
+            # pre-install phase, payload dnf => don't run
+            assert os.path.exists(cert2_file) is False
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert2],
+                payload_type=PAYLOAD_TYPE_LIVE_OS,
+                phase="pre-install"
+            ).run()
+            assert os.path.exists(cert2_file) is False
+
+            # pre-install phase, payload dnf => run
+            assert os.path.exists(cert2_file) is False
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert2],
+                payload_type=PAYLOAD_TYPE_DNF,
+                phase="pre-install"
+            ).run()
+            assert os.path.exists(cert2_file) is True

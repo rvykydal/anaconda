@@ -21,6 +21,7 @@ from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.modules.common.task import Task
 from pyanaconda.modules.common.errors.installation import SecurityInstallationError
 from pyanaconda.core.path import make_directories, join_paths
+from pyanaconda.core.constants import PAYLOAD_TYPE_DNF
 
 log = get_module_logger(__name__)
 
@@ -31,15 +32,19 @@ class ImportCertificatesTask(Task):
     Currently it just dumps the file to the path.
     """
 
-    def __init__(self, sysroot, certificates):
+    def __init__(self, sysroot, certificates, payload_type=None, phase=None):
         """Create a new certificates import task.
 
         :param str sysroot: a path to the root of the target system
         :param certificates: list of certificate data holders
+        :param payload_type: a type of the payload
+        :param phase: installation phase - "pre-install" or None for any other
         """
         super().__init__()
         self._sysroot = sysroot
         self._certificates = certificates
+        self._payload_type = payload_type
+        self._phase = phase
 
     @property
     def name(self):
@@ -72,6 +77,12 @@ class ImportCertificatesTask(Task):
 
         Dump the certificates into specified files and directories
         """
+        if self._phase == "pre-install":
+            if self._payload_type != PAYLOAD_TYPE_DNF:
+                log.debug("Not importing certificates in pre install for %s payload.",
+                          self._payload_type)
+                return
+
         for cert in self._certificates:
             log.debug("Importing certificate %s", cert)
             self._dump_certificate(cert, self._sysroot)
