@@ -54,13 +54,20 @@ class CertificatesModule(KickstartBaseModule):
             cert_data.cert = cert.cert
             if cert.dir:
                 cert_data.dir = cert.dir
+            if cert.category:
+                cert_data.category = cert.category
             certificates.append(cert_data)
         self.set_certificates(certificates)
 
     def setup_kickstart(self, data):
         """Setup the kickstart data."""
         for cert in self._certificates:
-            cert_ksdata = Certificate(cert=cert.cert, filename=cert.filename, dir=cert.dir)
+            cert_ksdata = Certificate(
+                cert=cert.cert,
+                filename=cert.filename,
+                dir=cert.dir,
+                category=cert.category,
+            )
             data.certificates.append(cert_ksdata)
 
     @property

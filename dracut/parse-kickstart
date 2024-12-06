@@ -32,6 +32,7 @@ os.urandom = ks_random
 import sys
 import logging
 import glob
+import subprocess
 from pykickstart.parser import KickstartParser, preprocessKickstart
 from pykickstart.sections import NullSection
 from pykickstart.version import returnClassForVersion
@@ -429,6 +430,19 @@ def _dump_certificate(cert, root="/", dump_dir=None):
         f.write('\n')
 
 
+def _import_certificate(path):
+    """Import the certificate into global store."""
+    log.debug("Importing certificate %s.", path)
+
+    CA_IMPORT_TOOL = '/usr/sbin/trust'
+    if not os.path.exists(CA_IMPORT_TOOL):
+        msg = "{} is missing. Cannot import certificate.".format(CA_IMPORT_TOOL)
+        log.error(msg)
+        return
+
+    subprocess.check_call([CA_IMPORT_TOOL, "anchor", path])
+
+
 def process_certificates(handler):
     """Import certificates defined in %certificate sections."""
     for cert in handler.certificates:
@@ -439,9 +453,26 @@ def process_certificates(handler):
             log.error("Missing certificate file name, skipping.")
             continue
 
-        _dump_certificate(cert)
-        # Dump for transport to switchroot
-        _dump_certificate(cert, root=CERT_TRANSPORT_DIR+"/path/")
+        category = None
+        if hasattr(cert, "category") and cert.category:
+            category = cert.category
+
+        if category is None:
+            _dump_certificate(cert)
+            # Dump for transport to switchroot
+            _dump_certificate(cert, root=CERT_TRANSPORT_DIR+"/path/")
+        elif category == "global":
+            if cert.dir:
+                _dump_certificate(cert)
+                # Dump for transport to switchroot
+                _dump_certificate(cert, root=CERT_TRANSPORT_DIR+"/path/")
+            # Dump for import and transport to switchroot
+            import_dir = CERT_TRANSPORT_DIR+"/category/"+category
+            _dump_certificate(cert, dump_dir=import_dir)
+            _import_certificate(import_dir)
+        else:
+            log.error("Invalid category %s, skipping", category)
+            continue
 
 
 def process_kickstart(ksfile):

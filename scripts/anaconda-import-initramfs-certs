@@ -4,3 +4,6 @@
 
 # certificates dumped to the specified file are copied to root
 cp -rv /run/install/certificates/path/* /
+
+# 'global' category certificates are iported to root global store
+trust anchor /run/install/certificates/category/global/*

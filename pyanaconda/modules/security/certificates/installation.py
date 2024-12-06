@@ -20,17 +20,23 @@ import os
 from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.modules.common.task import Task
 from pyanaconda.modules.common.errors.installation import SecurityInstallationError
+from pyanaconda.core import util
 from pyanaconda.core.path import make_directories, join_paths
 from pyanaconda.core.constants import PAYLOAD_TYPE_DNF, INSTALLATION_PHASE_PREINSTALL
 
 log = get_module_logger(__name__)
 
+CA_IMPORT_TOOL = "/usr/bin/trust"
+
 
 class ImportCertificatesTask(Task):
     """Task for importing certificates into a system.
 
-    Currently it just dumps the file to the path.
+    Dump the certificate into the specified file and directory and/or
+    import the certificate using a tool.
     """
+
+    CERT_DIR_CATEGORY_GLOBAL = "/run/install/certificates/category/global"
 
     def __init__(self, sysroot, certificates, payload_type=None, phase=None):
         """Create a new certificates import task.
@@ -50,15 +56,18 @@ class ImportCertificatesTask(Task):
     def name(self):
         return "Import CA certificates"
 
-    def _dump_certificate(self, cert, root):
+    def _dump_certificate(self, cert, root, dir=None):
         """Dump the certificate into specified file and directory."""
 
-        if not cert.dir:
+        cert_dir = dir or cert.dir
+
+        if not cert_dir:
             raise SecurityInstallationError(
                 "Certificate destination is missing for {}".format(cert.filename)
             )
 
-        dst_dir = join_paths(root, cert.dir)
+        dst_dir = join_paths(root, cert_dir)
+        log.debug("Dumping certificate %s into %s.", cert.filename, dst_dir)
         if not os.path.exists(dst_dir):
             log.debug("Path %s for certificate does not exist, creating.", dst_dir)
             make_directories(dst_dir)
@@ -72,10 +81,32 @@ class ImportCertificatesTask(Task):
             f.write(cert.cert)
             f.write('\n')
 
+    def _import_certificate(self, root, path):
+        """Import the certificate into the global store."""
+        log.debug("Importing certificate %s in root %s.", path, root)
+
+        if not os.path.lexists(root + CA_IMPORT_TOOL):
+            msg = "{} is missing. Cannot import certificate.".format(CA_IMPORT_TOOL)
+            if self._phase != INSTALLATION_PHASE_PREINSTALL:
+                raise SecurityInstallationError(msg)
+            else:
+                log.error(msg)
+                return
+
+        util.execWithRedirect(
+            CA_IMPORT_TOOL,
+            ["anchor", path],
+            root=self._sysroot
+        )
+
     def run(self):
         """Import CA certificates.
 
         Dump the certificates into specified files and directories
+        and / or run the import tool depending on the specified category.
+
+        Supported categories:
+        global        - imports to the global CA trust store
         """
         if self._phase == INSTALLATION_PHASE_PREINSTALL:
             if self._payload_type != PAYLOAD_TYPE_DNF:
@@ -85,4 +116,21 @@ class ImportCertificatesTask(Task):
 
         for cert in self._certificates:
             log.debug("Importing certificate %s", cert)
-            self._dump_certificate(cert, self._sysroot)
+
+            if not cert.category:
+                self._dump_certificate(
+                    cert,
+                    self._sysroot
+                )
+            elif cert.category == "global":
+                cert_dir = cert.dir or self.CERT_DIR_CATEGORY_GLOBAL
+                self._dump_certificate(
+                    cert,
+                    self._sysroot, dir=cert_dir
+                )
+                self._import_certificate(
+                    self._sysroot,
+                    join_paths(cert_dir, cert.filename),
+                )
+            else:
+                log.warning("Invalid category %s, skipping", cert.category)

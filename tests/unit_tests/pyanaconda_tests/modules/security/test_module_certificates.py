@@ -28,11 +28,13 @@ from dasbus.typing import *  # pylint: disable=wildcard-import
 from pyanaconda.modules.common.constants.objects import CERTIFICATES
 from pyanaconda.core.constants import PAYLOAD_TYPE_DNF, PAYLOAD_TYPE_LIVE_OS, \
     INSTALLATION_PHASE_PREINSTALL
+from pyanaconda.core.path import join_paths
 from pyanaconda.modules.common.structures.security import CertificateData
 from pyanaconda.modules.common.errors.installation import SecurityInstallationError
 from pyanaconda.modules.security.certificates.certificates import CertificatesModule
 from pyanaconda.modules.security.certificates.certificates_interface import CertificatesInterface
-from pyanaconda.modules.security.certificates.installation import ImportCertificatesTask
+from pyanaconda.modules.security.certificates.installation import ImportCertificatesTask, \
+    CA_IMPORT_TOOL
 from tests.unit_tests.pyanaconda_tests import check_dbus_property, check_task_creation, \
     patch_dbus_publish_object
 
@@ -84,11 +86,13 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
                 'cert': get_variant(Str, CERT1_CERT),
                 'filename': get_variant(Str, 'rvtest.pem'),
                 'dir': get_variant(Str, '/etc/pki/ca-trust/extracted/pem'),
+                'category': get_variant(Str, ''),
             },
             {
                 'cert': get_variant(Str, CERT2_CERT),
                 'filename': get_variant(Str, 'rvtest2.pem'),
                 'dir': get_variant(Str, ''),
+                'category': get_variant(Str, 'global'),
             }
         ]
         self._check_dbus_property(
@@ -196,8 +200,9 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
             self._check_cert_file(cert1, sysroot)
             self._check_cert_file(cert2, sysroot)
 
-    def _check_cert_file(self, cert, sysroot, missing=False):
-        cert_file = sysroot + cert.dir + "/" + cert.filename
+    def _check_cert_file(self, cert, sysroot, missing=False, dir=''):
+        cert_dir = dir or cert.dir
+        cert_file = sysroot + cert_dir + "/" + cert.filename
         if missing:
             assert os.path.exists(cert_file) is False
         else:
@@ -265,3 +270,116 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
                 phase=INSTALLATION_PHASE_PREINSTALL
             ).run()
             self._check_cert_file(cert2, sysroot)
+
+    @patch('pyanaconda.core.util.execWithRedirect')
+    def test_import_certificates_category_unknown(self, execWithRedirect):
+        """Test the ImportCertificatesTask for unknown category"""
+        cert = CertificateData()
+        cert.cert = CERT1_CERT
+        cert.filename = "cert.pem"
+        cert.category = "unknown"
+        cert.dir = "/dir/to/dump/cert"
+
+        with tempfile.TemporaryDirectory() as sysroot:
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert],
+            ).run()
+            # There is no exception
+            # The certificate is not dumped
+            self._check_cert_file(cert, sysroot, missing=True)
+            # The tool is not called
+            execWithRedirect.assert_not_called()
+
+    @patch('pyanaconda.modules.security.certificates.installation.os.path.lexists')
+    @patch('pyanaconda.core.util.execWithRedirect')
+    def test_import_certificates_category_global(self, execWithRedirect, mock_lexists):
+        """Test the ImportCertificatesTask for category global"""
+        cert = CertificateData()
+        cert.cert = CERT1_CERT
+        cert.filename = "cert.pem"
+        cert.category = "global"
+
+        mock_lexists.return_value = True
+
+        with tempfile.TemporaryDirectory() as sysroot:
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert],
+            ).run()
+            cert_dir = ImportCertificatesTask.CERT_DIR_CATEGORY_GLOBAL
+            # The certificate is dumped into runtime directory
+            self._check_cert_file(cert, sysroot,
+                                  dir=cert_dir)
+            # The import tool is called
+            cert_dir = join_paths(cert_dir, cert.filename)
+            execWithRedirect.assert_called_once_with(
+                CA_IMPORT_TOOL,
+                ['anchor', cert_dir],
+                root=sysroot,
+            )
+
+    @patch('pyanaconda.modules.security.certificates.installation.os.path.lexists')
+    @patch('pyanaconda.core.util.execWithRedirect')
+    def test_import_certificates_category_global_and_dir(self, execWithRedirect, mock_lexists):
+        """Test the ImportCertificatesTask for category global with defined dir"""
+        cert = CertificateData()
+        cert.cert = CERT1_CERT
+        cert.filename = "cert.pem"
+        cert.category = "global"
+        cert.dir = "/dir/to/dump/cert"
+
+        mock_lexists.return_value = True
+
+        with tempfile.TemporaryDirectory() as sysroot:
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert],
+            ).run()
+            # The certificate is dumped accrding to --dir
+            self._check_cert_file(cert, sysroot)
+            # The import tool is called
+            cert_dir = join_paths(cert.dir, cert.filename)
+            execWithRedirect.assert_called_once_with(
+                CA_IMPORT_TOOL,
+                ['anchor', cert_dir],
+                root=sysroot,
+            )
+
+    @patch('pyanaconda.modules.security.certificates.installation.os.path.lexists')
+    @patch('pyanaconda.core.util.execWithRedirect')
+    def test_import_certificates_category_global_missing_tool(self, execWithRedirect, mock_lexists):
+        """Test the ImportCertificatesTask for category global when tool is missing"""
+        cert = CertificateData()
+        cert.cert = CERT1_CERT
+        cert.filename = "cert.pem"
+        cert.category = "global"
+        cert.dir = "/dir/to/dump/cert"
+
+        mock_lexists.return_value = False
+
+        # pre-install phase: no exception, cert dumped
+        with tempfile.TemporaryDirectory() as sysroot:
+            ImportCertificatesTask(
+                sysroot=sysroot,
+                certificates=[cert],
+                phase=INSTALLATION_PHASE_PREINSTALL,
+                payload_type=PAYLOAD_TYPE_DNF,
+            ).run()
+            # The file is dumped
+            self._check_cert_file(cert, sysroot)
+            # The import tool is not called
+            execWithRedirect.assert_not_called()
+
+        # non pre-install phase: exception is raised
+        with tempfile.TemporaryDirectory() as sysroot:
+            with self.assertRaises(SecurityInstallationError):
+                ImportCertificatesTask(
+                    sysroot=sysroot,
+                    certificates=[cert],
+                ).run()
+
+            # The file was dumped
+            self._check_cert_file(cert, sysroot)
+            # The import tool is not called
+            execWithRedirect.assert_not_called()
