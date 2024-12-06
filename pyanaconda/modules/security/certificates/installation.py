@@ -54,10 +54,10 @@ class ImportCertificatesTask(Task):
 
     @property
     def name(self):
-        return "Import certificates"
+        return "Import CA certificates"
 
     def _dump_certificate(self, cert, root, path=None):
-
+        """Dump the certificate into specified file."""
         path = path or cert.path
 
         if not path:
@@ -81,6 +81,7 @@ class ImportCertificatesTask(Task):
             f.write('\n')
 
     def _import_certificate(self, root, path):
+        """Import the certificate into global store."""
         log.debug("Importing certificate %s in root %s.", path, root)
 
         if not os.path.lexists(root + CA_IMPORT_TOOL):
@@ -98,6 +99,14 @@ class ImportCertificatesTask(Task):
         )
 
     def run(self):
+        """Import CA certificates.
+
+        Dump certificate into specified file and run an impoort tool on the dumped
+        file for the category.
+
+        Currently supported categories:
+        global          imports to the global CA trust store
+        """
         if self._phase == INSTALLATION_PHASE_PREINSTALL:
             if self._payload_type != PAYLOAD_TYPE_DNF:
                 log.debug("Not importing certificates in pre install for %s payload.",
