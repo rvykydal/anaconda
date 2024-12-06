@@ -28,6 +28,7 @@ class CertificateData(DBusData):
         self._name = ""
         self._cert = ""
         self._path = ""
+        self._category = ""
 
     @property
     def name(self) -> Str:
@@ -55,3 +56,12 @@ class CertificateData(DBusData):
     @path.setter
     def path(self, value: Str) -> None:
         self._path = value
+
+    @property
+    def category(self) -> Str:
+        """The certificate category."""
+        return self._category
+
+    @category.setter
+    def category(self, value: Str) -> None:
+        self._category = value

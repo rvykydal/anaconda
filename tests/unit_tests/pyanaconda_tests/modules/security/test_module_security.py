@@ -173,7 +173,7 @@ class SecurityInterfaceTestCase(unittest.TestCase):
         -----END CERTIFICATE-----
         %end
 
-        %certificate --name=rvtest2.pem --path=/cert_path2
+        %certificate --name=rvtest2.pem --path=/cert_path2 --category=global
         -----BEGIN CERTIFICATE-----
         MIIBkTCCATegAwIBAgIUN6r4TjFJqP/TS6U25iOGL2Wt/6kwCgYIKoZIzj0EAwIw
         FjEUMBIGA1UEAwwLUlZURVNUIDIgQ0EwHhcNMjQxMTIwMTQwMzIxWhcNMzQxMTE4
@@ -202,7 +202,7 @@ class SecurityInterfaceTestCase(unittest.TestCase):
         -----END CERTIFICATE-----
         %end
 
-        %certificate --name=rvtest2.pem --path=/cert_path2
+        %certificate --name=rvtest2.pem --path=/cert_path2 --category=global
         -----BEGIN CERTIFICATE-----
         MIIBkTCCATegAwIBAgIUN6r4TjFJqP/TS6U25iOGL2Wt/6kwCgYIKoZIzj0EAwIw
         FjEUMBIGA1UEAwwLUlZURVNUIDIgQ0EwHhcNMjQxMTIwMTQwMzIxWhcNMzQxMTE4
