@@ -30,8 +30,10 @@ def ks_random(num_bytes):
 os.urandom = ks_random
 
 import sys
+import shutil
 import logging
 import glob
+import subprocess
 from pykickstart.parser import KickstartParser, preprocessKickstart
 from pykickstart.sections import NullSection
 from pykickstart.version import returnClassForVersion
@@ -65,6 +67,8 @@ TMPDIR = "/tmp"
 ##define ARPHRD_INFINIBAND 32            /* InfiniBand                   */
 ARPHRD_ETHER = "1"
 ARPHRD_INFINIBAND = "32"
+
+CERT_TRANSPORT_DIR = "/run/install/certificates"
 
 # Helper function for reading simple files in /sys
 def readsysfile(f):
@@ -403,6 +407,75 @@ def ksnet_to_dracut(args, lineno, net, bootdev=False):
 
     return " ".join(line)
 
+
+def _dump_certificate(cert, root="/", dump_dir=None):
+    """Dump the certificate into specified file."""
+    dump_dir = dump_dir or cert.dir
+    if not dump_dir:
+        log.error("Certificate destination is missing for {}".format(cert.filename))
+        return
+
+    dst_dir = os.path.join(root+dump_dir.lstrip('/'))
+    log.debug("Dumping certificate %s into %s.", cert.filename, dst_dir)
+    if not os.path.exists(dst_dir):
+        log.debug("Path %s for certificate does not exist, creating.", dst_dir)
+        os.makedirs(dst_dir)
+
+    dst = os.path.join(dst_dir, cert.filename)
+
+    if os.path.exists(dst):
+        log.warning("Certificate file %s already exists, replacing.", dst)
+
+    with open(dst, 'w') as f:
+        f.write(cert.cert)
+        f.write('\n')
+
+
+def _import_certificate(path):
+    """Import the certificate into global store."""
+    log.debug("Importing certificate %s.", path)
+
+    CA_IMPORT_TOOL = '/usr/sbin/trust'
+    if not os.path.exists(CA_IMPORT_TOOL):
+        msg = "{} is missing. Cannot import certificate.".format(CA_IMPORT_TOOL)
+        log.error(msg)
+        return
+
+    subprocess.check_call([CA_IMPORT_TOOL, "anchor", path])
+
+
+def process_certificates(handler):
+    """Import certificates defined in %certificate sections."""
+    for cert in handler.certificates:
+
+        log.info("Processing kickstart certificate %s", cert.filename)
+
+        if not cert.filename:
+            log.error("Missing certificate file name, skipping.")
+            continue
+
+        category = None
+        if hasattr(cert, "category") and cert.category:
+            category = cert.category
+
+        if category is None:
+            _dump_certificate(cert)
+            # Dump for transport to switchroot
+            _dump_certificate(cert, root=CERT_TRANSPORT_DIR+"/path/")
+        elif category == "global":
+            if cert.dir:
+                _dump_certificate(cert)
+                # Dump for transport to switchroot
+                _dump_certificate(cert, root=CERT_TRANSPORT_DIR+"/path/")
+            # Dump for import and transport to switchroot
+            import_dir = CERT_TRANSPORT_DIR+"/category/"+category
+            _dump_certificate(cert, dump_dir=import_dir)
+            _import_certificate(import_dir)
+        else:
+            log.error("Invalid category %s, skipping", category)
+            continue
+
+
 def process_kickstart(ksfile):
     handler = DracutHandler()
     try:
@@ -422,6 +495,7 @@ def process_kickstart(ksfile):
     with open(TMPDIR+"/ks.info", "a") as f:
         f.write('parsed_kickstart="%s"\n' % processed_file)
     log.info("finished parsing kickstart")
+    process_certificates(handler)
     return processed_file, handler.output
 
 if __name__ == '__main__':

@@ -1,0 +1,9 @@
+#! /bin/bash
+# Transfers CA certificates imported in initramfs via kickstart
+# to anaconda environment after switchroot.
+
+# certificates dumped for --path are just copied to root
+cp -rv /run/install/certificates/path/* /
+
+# 'global' category certificates are iported to root
+trust anchor /run/install/certificates/category/global/*
