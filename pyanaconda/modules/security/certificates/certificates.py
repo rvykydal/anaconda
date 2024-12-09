@@ -50,10 +50,10 @@ class CertificatesModule(KickstartBaseModule):
         certificates = []
         for cert in data.certificates:
             cert_data = CertificateData()
-            cert_data.name = cert.name
+            cert_data.filename = cert.filename
             cert_data.cert = cert.cert
-            if cert.path:
-                cert_data.path = cert.path
+            if cert.dir:
+                cert_data.dir = cert.dir
             if cert.category:
                 cert_data.category = cert.category
             certificates.append(cert_data)
@@ -64,8 +64,8 @@ class CertificatesModule(KickstartBaseModule):
         for cert in self._certificates:
             cert_ksdata = Certificate(
                 cert=cert.cert,
-                name=cert.name,
-                path=cert.path,
+                filename=cert.filename,
+                dir=cert.dir,
                 category=cert.category,
             )
             data.certificates.append(cert_ksdata)

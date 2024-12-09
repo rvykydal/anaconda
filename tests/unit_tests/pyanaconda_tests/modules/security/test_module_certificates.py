@@ -85,14 +85,14 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         certs_value = [
             {
                 'cert': get_variant(Str, CERT1_CERT),
-                'name': get_variant(Str, 'rvtest.pem'),
-                'path': get_variant(Str, '/etc/pki/ca-trust/extracted/pem'),
+                'filename': get_variant(Str, 'rvtest.pem'),
+                'dir': get_variant(Str, '/etc/pki/ca-trust/extracted/pem'),
                 'category': get_variant(Str, ''),
             },
             {
                 'cert': get_variant(Str, CERT2_CERT),
-                'name': get_variant(Str, 'rvtest2.pem'),
-                'path': get_variant(Str, ''),
+                'filename': get_variant(Str, 'rvtest2.pem'),
+                'dir': get_variant(Str, ''),
                 'category': get_variant(Str, 'global'),
             }
         ]
@@ -111,13 +111,13 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
 
     def _get_2_test_certs(self):
         cert1 = CertificateData()
-        cert1.name = "cert1.pem"
+        cert1.filename = "cert1.pem"
         cert1.cert = CERT1_CERT
-        cert1.path = "/cert/drop/directory1"
+        cert1.dir = "/cert/drop/directory1"
         cert2 = CertificateData()
-        cert2.name = "cert2.pem"
+        cert2.filename = "cert2.pem"
         cert2.cert = CERT2_CERT
-        cert2.path = "/cert/drop/directory2"
+        cert2.dir = "/cert/drop/directory2"
         return(cert1, cert2)
 
     @patch_dbus_publish_object
@@ -132,9 +132,9 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         obj = check_task_creation(task_path, publisher, ImportCertificatesTask)
         assert obj.implementation._sysroot == "/"
         assert len(obj.implementation._certificates) == 2
-        t_cert1, t_cert2 = obj.implementation._certificates
-        assert (t_cert1.name, t_cert1.path, t_cert1.cert) == (cert1.name, cert1.path, cert1.cert)
-        assert (t_cert2.name, t_cert2.path, t_cert2.cert) == (cert2.name, cert2.path, cert2.cert)
+        c1, c2 = obj.implementation._certificates
+        assert (c1.filename, c1.dir, c1.cert) == (cert1.filename, cert1.dir, cert1.cert)
+        assert (c2.filename, c2.dir, c2.cert) == (cert2.filename, cert2.dir, cert2.cert)
 
     @patch_dbus_publish_object
     def test_install_with_task_default(self, publisher):
@@ -156,9 +156,9 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         obj = check_task_creation(task_path, publisher, ImportCertificatesTask)
         assert obj.implementation._sysroot == "/mnt/sysroot"
         assert len(obj.implementation._certificates) == 2
-        t_cert1, t_cert2 = obj.implementation._certificates
-        assert (t_cert1.name, t_cert1.path, t_cert1.cert) == (cert1.name, cert1.path, cert1.cert)
-        assert (t_cert2.name, t_cert2.path, t_cert2.cert) == (cert2.name, cert2.path, cert2.cert)
+        c1, c2 = obj.implementation._certificates
+        assert (c1.filename, c1.dir, c1.cert) == (cert1.filename, cert1.dir, cert1.cert)
+        assert (c2.filename, c2.dir, c2.cert) == (cert2.filename, cert2.dir, cert2.cert)
 
     @patch_dbus_publish_object
     def test_pre_install_with_task_default(self, publisher):
@@ -180,18 +180,18 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         obj = check_task_creation(task_path, publisher, ImportCertificatesTask)
         assert obj.implementation._sysroot == "/mnt/sysroot"
         assert len(obj.implementation._certificates) == 2
-        t_cert1, t_cert2 = obj.implementation._certificates
-        assert (t_cert1.name, t_cert1.path, t_cert1.cert) == (cert1.name, cert1.path, cert1.cert)
-        assert (t_cert2.name, t_cert2.path, t_cert2.cert) == (cert2.name, cert2.path, cert2.cert)
+        c1, c2 = obj.implementation._certificates
+        assert (c1.filename, c1.dir, c1.cert) == (cert1.filename, cert1.dir, cert1.cert)
+        assert (c2.filename, c2.dir, c2.cert) == (cert2.filename, cert2.dir, cert2.cert)
 
     def test_import_certificates_task_files(self):
         """Test the ImportCertificatesTask task"""
         cert1, cert2 = self._get_2_test_certs()
 
         with tempfile.TemporaryDirectory() as sysroot:
-            # cert1 has existing path
-            os.makedirs(sysroot+cert1.path)
-            # cert2 has non-existing path
+            # cert1 has existing dir
+            os.makedirs(sysroot+cert1.dir)
+            # cert2 has non-existing dir
 
             ImportCertificatesTask(
                 sysroot=sysroot,
@@ -201,9 +201,9 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
             self._check_cert_file(cert1, sysroot)
             self._check_cert_file(cert2, sysroot)
 
-    def _check_cert_file(self, cert, sysroot, missing=False, path=''):
-        path = path or cert.path
-        cert_file = sysroot + path + "/" + cert.name
+    def _check_cert_file(self, cert, sysroot, missing=False, dir=''):
+        cert_dir = dir or cert.dir
+        cert_file = sysroot + cert_dir + "/" + cert.filename
         if missing:
             assert os.path.exists(cert_file) is False
         else:
@@ -217,8 +217,8 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as sysroot:
             # certificate file to be dumped already exists
-            os.makedirs(sysroot+cert1.path)
-            cert1_file = sysroot + cert1.path + "/" + cert1.name
+            os.makedirs(sysroot+cert1.dir)
+            cert1_file = sysroot + cert1.dir + "/" + cert1.filename
             open(cert1_file, 'w')
 
             ImportCertificatesTask(
@@ -231,7 +231,7 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
     def test_import_certificates_missing_destination(self):
         """Test the ImportCertificatesTask task with missing destination"""
         cert1, _ = self._get_2_test_certs()
-        cert1.path = ''
+        cert1.dir = ''
 
         with tempfile.TemporaryDirectory() as sysroot:
             with self.assertRaises(SecurityInstallationError):
@@ -277,9 +277,9 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         """Test the ImportCertificatesTask for unknown category"""
         cert = CertificateData()
         cert.cert = CERT1_CERT
-        cert.name = "cert.pem"
+        cert.filename = "cert.pem"
         cert.category = "unknown"
-        cert.path = "/path/to/dump/cert"
+        cert.dir = "/dir/to/dump/cert"
 
         with tempfile.TemporaryDirectory() as sysroot:
             ImportCertificatesTask(
@@ -298,7 +298,7 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         """Test the ImportCertificatesTask for category global"""
         cert = CertificateData()
         cert.cert = CERT1_CERT
-        cert.name = "cert.pem"
+        cert.filename = "cert.pem"
         cert.category = "global"
 
         mock_lexists.return_value = True
@@ -311,24 +311,24 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
             cert_dir = ImportCertificatesTask.CERT_DIR_CATEGORY_GLOBAL
             # The certificate is dumped into runtime directory
             self._check_cert_file(cert, sysroot,
-                                  path=cert_dir)
+                                  dir=cert_dir)
             # The import tool is called
-            cert_path = join_paths(cert_dir, cert.name)
+            cert_dir = join_paths(cert_dir, cert.filename)
             execWithRedirect.assert_called_once_with(
                 CA_IMPORT_TOOL,
-                ['anchor', cert_path],
+                ['anchor', cert_dir],
                 root=sysroot,
             )
 
     @patch('pyanaconda.modules.security.certificates.installation.os.path.lexists')
     @patch('pyanaconda.core.util.execWithRedirect')
-    def test_import_certificates_category_global_and_path(self, execWithRedirect, mock_lexists):
-        """Test the ImportCertificatesTask for category global with defined path"""
+    def test_import_certificates_category_global_and_dir(self, execWithRedirect, mock_lexists):
+        """Test the ImportCertificatesTask for category global with defined dir"""
         cert = CertificateData()
         cert.cert = CERT1_CERT
-        cert.name = "cert.pem"
+        cert.filename = "cert.pem"
         cert.category = "global"
-        cert.path = "/path/to/dump/cert"
+        cert.dir = "/dir/to/dump/cert"
 
         mock_lexists.return_value = True
 
@@ -337,13 +337,13 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
                 sysroot=sysroot,
                 certificates=[cert],
             ).run()
-            # The certificate is dumped accrding to --path
+            # The certificate is dumped accrding to --dir
             self._check_cert_file(cert, sysroot)
             # The import tool is called
-            cert_path = join_paths(cert.path, cert.name)
+            cert_dir = join_paths(cert.dir, cert.filename)
             execWithRedirect.assert_called_once_with(
                 CA_IMPORT_TOOL,
-                ['anchor', cert_path],
+                ['anchor', cert_dir],
                 root=sysroot,
             )
 
@@ -353,9 +353,9 @@ class CertificatesInterfaceTestCase(unittest.TestCase):
         """Test the ImportCertificatesTask for category global when tool is missing"""
         cert = CertificateData()
         cert.cert = CERT1_CERT
-        cert.name = "cert.pem"
+        cert.filename = "cert.pem"
         cert.category = "global"
-        cert.path = "/path/to/dump/cert"
+        cert.dir = "/dir/to/dump/cert"
 
         mock_lexists.return_value = False
 

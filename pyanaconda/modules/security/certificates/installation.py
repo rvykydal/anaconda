@@ -56,22 +56,22 @@ class ImportCertificatesTask(Task):
     def name(self):
         return "Import CA certificates"
 
-    def _dump_certificate(self, cert, root, path=None):
+    def _dump_certificate(self, cert, root, dir=None):
         """Dump the certificate into specified file."""
-        path = path or cert.path
+        cert_dir = dir or cert.dir
 
-        if not path:
+        if not cert_dir:
             raise SecurityInstallationError(
-                "Certificate destination is missing for {}".format(cert.name)
+                "Certificate destination is missing for {}".format(cert.filename)
             )
 
-        dst_dir = join_paths(root, path)
-        log.debug("Dumping certificate %s into %s.", cert.name, dst_dir)
+        dst_dir = join_paths(root, cert_dir)
+        log.debug("Dumping certificate %s into %s.", cert.filename, dst_dir)
         if not os.path.exists(dst_dir):
             log.debug("Path %s for certificate does not exist, creating.", dst_dir)
             make_directories(dst_dir)
 
-        dst = join_paths(dst_dir, cert.name)
+        dst = join_paths(dst_dir, cert.filename)
 
         if os.path.exists(dst):
             log.warning("Certificate file %s already exists, replacing.", dst)
@@ -122,14 +122,14 @@ class ImportCertificatesTask(Task):
                     self._sysroot
                 )
             elif cert.category == "global":
-                path = cert.path or self.CERT_DIR_CATEGORY_GLOBAL
+                cert_dir = cert.dir or self.CERT_DIR_CATEGORY_GLOBAL
                 self._dump_certificate(
                     cert,
-                    self._sysroot, path=path
+                    self._sysroot, dir=cert_dir
                 )
                 self._import_certificate(
                     self._sysroot,
-                    join_paths(path, cert.name),
+                    join_paths(cert_dir, cert.filename),
                 )
             else:
                 log.warning("Invalid category %s, skipping", cert.category)
