@@ -26,18 +26,18 @@ class CertificateData(DBusData):
     """Structure for the certificate data."""
 
     def __init__(self):
-        self._name = ""
+        self._filename = ""
         self._cert = ""
-        self._path = ""
+        self._dir = ""
 
     @property
-    def name(self) -> Str:
-        """The certificate name."""
-        return self._name
+    def filename(self) -> Str:
+        """The certificate file name."""
+        return self._filename
 
-    @name.setter
-    def name(self, value: Str) -> None:
-        self._name = value
+    @filename.setter
+    def filename(self, value: Str) -> None:
+        self._filename = value
 
     @property
     def cert(self) -> Str:
@@ -49,10 +49,10 @@ class CertificateData(DBusData):
         self._cert = value
 
     @property
-    def path(self) -> Str:
-        """The certificate path."""
-        return self._path
+    def dir(self) -> Str:
+        """The certificate directory."""
+        return self._dir
 
-    @path.setter
-    def path(self, value: Str) -> None:
-        self._path = value
+    @dir.setter
+    def dir(self, value: Str) -> None:
+        self._dir = value

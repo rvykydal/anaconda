@@ -406,20 +406,20 @@ def ksnet_to_dracut(args, lineno, net, bootdev=False):
     return " ".join(line)
 
 
-def _dump_certificate(cert, root="/", path=None):
+def _dump_certificate(cert, root="/", dump_dir=None):
     """Dump the certificate into specified file."""
-    path = path or cert.path
-    if not path:
-        log.error("Certificate destination is missing for %s", cert.name)
+    dump_dir = dump_dir or cert.dir
+    if not dump_dir:
+        log.error("Certificate destination is missing for %s", cert.filename)
         return
 
-    dst_dir = os.path.join(root+path.lstrip('/'))
-    log.debug("Dumping certificate %s into %s.", cert.name, dst_dir)
+    dst_dir = os.path.join(root+dump_dir.lstrip('/'))
+    log.debug("Dumping certificate %s into %s.", cert.filename, dst_dir)
     if not os.path.exists(dst_dir):
         log.debug("Path %s for certificate does not exist, creating.", dst_dir)
         os.makedirs(dst_dir)
 
-    dst = os.path.join(dst_dir, cert.name)
+    dst = os.path.join(dst_dir, cert.filename)
 
     if os.path.exists(dst):
         log.warning("Certificate file %s already exists, replacing.", dst)
@@ -433,10 +433,10 @@ def process_certificates(handler):
     """Import certificates defined in %certificate sections."""
     for cert in handler.certificates:
 
-        log.info("Processing kickstart certificate %s", cert.name)
+        log.info("Processing kickstart certificate %s", cert.filename)
 
-        if not cert.name:
-            log.error("Missing certificate name, skipping.")
+        if not cert.filename:
+            log.error("Missing certificate file name, skipping.")
             continue
 
         _dump_certificate(cert)

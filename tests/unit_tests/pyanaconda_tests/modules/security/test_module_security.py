@@ -159,7 +159,7 @@ class SecurityInterfaceTestCase(unittest.TestCase):
     def test_certificates_kickstart(self):
         """Test the %certificates section."""
         ks_in = """
-        %certificate --name=rvtest.pem --path=/cert_path
+        %certificate --filename=rvtest.pem --dir=/cert_dir
         -----BEGIN CERTIFICATE-----
         MIIBjTCCATOgAwIBAgIUWR5HO3v/0I80Ne0jQWVZFODuWLEwCgYIKoZIzj0EAwIw
         FDESMBAGA1UEAwwJUlZURVNUIENBMB4XDTI0MTEyMDEzNTk1N1oXDTM0MTExODEz
@@ -173,7 +173,7 @@ class SecurityInterfaceTestCase(unittest.TestCase):
         -----END CERTIFICATE-----
         %end
 
-        %certificate --name=rvtest2.pem --path=/cert_path2
+        %certificate --filename=rvtest2.pem --dir=/cert_dir2
         -----BEGIN CERTIFICATE-----
         MIIBkTCCATegAwIBAgIUN6r4TjFJqP/TS6U25iOGL2Wt/6kwCgYIKoZIzj0EAwIw
         FjEUMBIGA1UEAwwLUlZURVNUIDIgQ0EwHhcNMjQxMTIwMTQwMzIxWhcNMzQxMTE4
@@ -188,7 +188,7 @@ class SecurityInterfaceTestCase(unittest.TestCase):
         %end
         """
         ks_out = """
-        %certificate --name=rvtest.pem --path=/cert_path
+        %certificate --filename=rvtest.pem --dir=/cert_dir
         -----BEGIN CERTIFICATE-----
         MIIBjTCCATOgAwIBAgIUWR5HO3v/0I80Ne0jQWVZFODuWLEwCgYIKoZIzj0EAwIw
         FDESMBAGA1UEAwwJUlZURVNUIENBMB4XDTI0MTEyMDEzNTk1N1oXDTM0MTExODEz
@@ -202,7 +202,7 @@ class SecurityInterfaceTestCase(unittest.TestCase):
         -----END CERTIFICATE-----
         %end
 
-        %certificate --name=rvtest2.pem --path=/cert_path2
+        %certificate --filename=rvtest2.pem --dir=/cert_dir2
         -----BEGIN CERTIFICATE-----
         MIIBkTCCATegAwIBAgIUN6r4TjFJqP/TS6U25iOGL2Wt/6kwCgYIKoZIzj0EAwIw
         FjEUMBIGA1UEAwwLUlZURVNUIDIgQ0EwHhcNMjQxMTIwMTQwMzIxWhcNMzQxMTE4

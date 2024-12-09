@@ -53,17 +53,17 @@ class ImportCertificatesTask(Task):
     def _dump_certificate(self, cert, root):
         """Dump the certificate into specified file and directory."""
 
-        if not cert.path:
+        if not cert.dir:
             raise SecurityInstallationError(
-                "Certificate destination is missing for {}".format(cert.name)
+                "Certificate destination is missing for {}".format(cert.filename)
             )
 
-        dst_dir = join_paths(root, cert.path)
+        dst_dir = join_paths(root, cert.dir)
         if not os.path.exists(dst_dir):
             log.debug("Path %s for certificate does not exist, creating.", dst_dir)
             make_directories(dst_dir)
 
-        dst = join_paths(dst_dir, cert.name)
+        dst = join_paths(dst_dir, cert.filename)
 
         if os.path.exists(dst):
             log.warning("Certificate file %s already exists, replacing.", dst)
