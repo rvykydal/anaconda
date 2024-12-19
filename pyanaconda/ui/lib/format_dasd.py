@@ -19,20 +19,20 @@
 #
 from blivet import arch
 
-from pyanaconda.flags import flags
-from pyanaconda.core.signal import Signal
+from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.core.i18n import _
-from pyanaconda.modules.common.structures.storage import DeviceData
-from pyanaconda.ui.lib.storage import reset_storage
+from pyanaconda.core.signal import Signal
+from pyanaconda.flags import flags
 from pyanaconda.modules.common.constants.objects import DASD, DEVICE_TREE
 from pyanaconda.modules.common.constants.services import STORAGE
+from pyanaconda.modules.common.structures.storage import DeviceData
 from pyanaconda.modules.common.task import sync_run_task
+from pyanaconda.ui.lib.storage import reset_storage
 
-from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
 
 
-class DasdFormatting(object):
+class DasdFormatting:
     """Class for formatting DASDs."""
 
     def __init__(self):

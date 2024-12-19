@@ -24,18 +24,23 @@ screens handling languages or locales configuration.
 
 from abc import ABCMeta, abstractmethod
 
+import gi
+
 from pyanaconda import localization
 from pyanaconda.core.string import strip_accents
-from pyanaconda.ui.gui.utils import set_treeview_selection, timed_action, override_cell_property
+from pyanaconda.ui.gui.utils import (
+    override_cell_property,
+    set_treeview_selection,
+    timed_action,
+)
 
-import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Pango", "1.0")
 gi.require_version("GdkPixbuf", "2.0")
-from gi.repository import Gtk, Pango, GdkPixbuf
+from gi.repository import GdkPixbuf, Gtk, Pango
 
 
-class LangLocaleHandler(object, metaclass=ABCMeta):
+class LangLocaleHandler(metaclass=ABCMeta):
     """
     Class that could be used as a mixin for screens handling languages or
     locales configuration.
@@ -106,10 +111,7 @@ class LangLocaleHandler(object, metaclass=ABCMeta):
         # text entry.  Either the English or native names can match.
         lowered = entry.lower()
         translit = strip_accents(native).lower()
-        if lowered in native.lower() or lowered in english.lower() or lowered in translit:
-            return True
-        else:
-            return False
+        return lowered in native.lower() or lowered in english.lower() or lowered in translit
 
     def _render_lang_selected(self, column, renderer, model, itr, user_data=None):
         (lang_store, sel_itr) = self._langSelection.get_selected()

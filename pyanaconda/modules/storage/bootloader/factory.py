@@ -15,15 +15,15 @@
 # License and may only be used or replicated with the express permission of
 # Red Hat, Inc.
 #
+from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.modules.storage import platform
 
-from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
 
 __all__ = ["BootLoaderFactory"]
 
 
-class BootLoaderFactory(object):
+class BootLoaderFactory:
     """The boot loader factory."""
 
     # The default boot loader class.
@@ -94,7 +94,9 @@ class BootLoaderFactory(object):
         if name == "SDBOOT":
             platform_class = platform.platform.__class__
             if platform_class is platform.Aarch64EFI:
-                from pyanaconda.modules.storage.bootloader.efi import Aarch64EFISystemdBoot
+                from pyanaconda.modules.storage.bootloader.efi import (
+                    Aarch64EFISystemdBoot,
+                )
                 return Aarch64EFISystemdBoot
             if platform_class is platform.EFI:
                 from pyanaconda.modules.storage.bootloader.efi import X64EFISystemdBoot

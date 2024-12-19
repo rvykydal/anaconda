@@ -17,8 +17,12 @@
 #
 
 import unittest
+
 from pyanaconda.core.kernel import KernelArguments, kernel_arguments
-from collections.abc import Iterable
+
+# FIXME: https://github.com/pylint-dev/pylint/issues/10112
+# Re-enable the following line when the issue is fixed
+# from collections.abc import Iterable
 
 
 class KernelArgumentsTests(unittest.TestCase):
@@ -77,7 +81,9 @@ class KernelArgumentsTests(unittest.TestCase):
 
         ka = KernelArguments.from_defaults()
         it = ka.items()
-        assert isinstance(it, Iterable)
+        # FIXME: https://github.com/pylint-dev/pylint/issues/10112
+        # Re-enable the following line when the issue is fixed
+        # assert isinstance(it, Iterable)
         root_seen = False
         for k, v in it:  # pylint: disable=unused-variable
             if k == "root":
@@ -91,9 +97,11 @@ class KernelArgumentsTests(unittest.TestCase):
             "blah inst.foo=anything inst.nothing=indeed")
         it = ka.items_raw()
 
-        assert isinstance(it, Iterable)
+        # FIXME: https://github.com/pylint-dev/pylint/issues/10112
+        # Re-enable the following line when the issue is fixed
+        # assert isinstance(it, Iterable)
 
-        res = dict()
+        res = {}
         for k, v in it:
             res[k] = v
 

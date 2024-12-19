@@ -16,16 +16,16 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.core.configuration.anaconda import conf
-from pyanaconda.core.signal import Signal
 from pyanaconda.core.dbus import DBus
+from pyanaconda.core.signal import Signal
 from pyanaconda.modules.boss.module_manager.start_modules import StartModulesTask
 
-from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
 
 
-class ModuleManager(object):
+class ModuleManager:
     """A class for managing kickstart modules."""
 
     def __init__(self):

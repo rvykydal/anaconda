@@ -16,17 +16,18 @@
 # Red Hat, Inc.
 #
 
-import iso639
-import threading
 import gettext
+import threading
 from collections import namedtuple
+
+import iso639
 from xkbregistry import rxkb
 
+from pyanaconda import localization
 from pyanaconda.core.async_utils import async_action_wait
 from pyanaconda.core.string import upcase_first_letter
 from pyanaconda.keyboard import normalize_layout_variant
 from pyanaconda.modules.common.constants.services import LOCALIZATION
-from pyanaconda import localization
 
 Xkb_ = lambda x: gettext.translation("xkeyboard-config", fallback=True).gettext(x)
 iso_ = lambda x: gettext.translation("iso_639", fallback=True).gettext(x)
@@ -34,7 +35,7 @@ iso_ = lambda x: gettext.translation("iso_639", fallback=True).gettext(x)
 # namedtuple for information about a keyboard layout (its language and description)
 LayoutInfo = namedtuple("LayoutInfo", ["langs", "desc"])
 
-class XklWrapper(object):
+class XklWrapper:
     """
     Class that used to wrap libxklavier functionality.
 
@@ -60,10 +61,10 @@ class XklWrapper(object):
 
         self._rxkb = rxkb.Context()
 
-        self._layout_infos = dict()
+        self._layout_infos = {}
         self._build_layout_infos()
 
-        self._switch_opt_infos = dict()
+        self._switch_opt_infos = {}
         self._build_switch_opt_infos()
 
     def _build_layout_infos(self):
@@ -72,7 +73,7 @@ class XklWrapper(object):
             if layout.variant:
                 name += ' (' + layout.variant + ')'
 
-            langs = list()
+            langs = []
             for lang in layout.iso639_codes:
                 if iso639.find(iso639_2=lang):
                     langs.append(iso639.to_name(lang))

@@ -18,8 +18,9 @@
 #
 
 from unittest import TestCase
-from unittest.mock import patch, Mock
-from pyanaconda.core.live_user import get_live_user, User
+from unittest.mock import Mock, patch
+
+from pyanaconda.core.live_user import User, get_live_user
 
 
 class GetLiveUserTests(TestCase):
@@ -62,7 +63,7 @@ class GetLiveUserTests(TestCase):
 
     @patch("pyanaconda.core.live_user.conf")
     @patch("pyanaconda.core.live_user.getpwuid")
-    @patch.dict("pyanaconda.core.live_user.os.environ", dict())
+    @patch.dict("pyanaconda.core.live_user.os.environ", {})
     def test_get_live_user_with_missing_pkexec_env(self, getpwuid_mock, conf_mock):
 
         conf_mock.system.provides_liveuser = True

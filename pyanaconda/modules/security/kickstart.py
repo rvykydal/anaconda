@@ -17,7 +17,11 @@
 # License and may only be used or replicated with the express permission of
 # Red Hat, Inc.
 #
-from pyanaconda.core.kickstart import KickstartSpecification, commands as COMMANDS
+from pykickstart.parser import Certificate
+from pykickstart.sections import CertificateSection
+
+from pyanaconda.core.kickstart import KickstartSpecification
+from pyanaconda.core.kickstart import commands as COMMANDS
 
 
 class SecurityKickstartSpecification(KickstartSpecification):
@@ -26,4 +30,12 @@ class SecurityKickstartSpecification(KickstartSpecification):
         "authselect": COMMANDS.Authselect,
         "selinux": COMMANDS.SELinux,
         "realm": COMMANDS.Realm
+    }
+
+    sections = {
+        "certificate": (CertificateSection, Certificate)
+    }
+
+    sections_data = {
+        "certificate": (Certificate, "certificates")
     }

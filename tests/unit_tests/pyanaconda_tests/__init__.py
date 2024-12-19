@@ -15,26 +15,26 @@
 # License and may only be used or replicated with the express permission of
 # Red Hat, Inc.
 #
+import re
 from collections import defaultdict
 
-import re
-
 import gi
-gi.require_version("GLib", "2.0")
-from gi.repository import GLib
 
+gi.require_version("GLib", "2.0")
 from contextlib import ContextDecorator
 from textwrap import dedent
 from unittest.mock import Mock, patch
 
 from dasbus.server.template import BasicInterfaceTemplate
+from dasbus.typing import get_native
+from gi.repository import GLib
+
 from pyanaconda.modules.common.constants.interfaces import KICKSTART_MODULE
 from pyanaconda.modules.common.structures.kickstart import KickstartReport
 from pyanaconda.modules.common.task import TaskInterface
-from dasbus.typing import get_native
 
 
-class run_in_glib(object):
+class run_in_glib:
     """Run the test methods in GLib.
 
     :param timeout: Timeout in seconds when the loop will be killed.

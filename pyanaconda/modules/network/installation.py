@@ -18,19 +18,26 @@
 import os
 import shutil
 
-from pyanaconda.core.path import make_directories, join_paths
+from pyanaconda.anaconda_loggers import get_module_logger
+from pyanaconda.core.path import join_paths, make_directories
 from pyanaconda.modules.common.errors.installation import NetworkInstallationError
 from pyanaconda.modules.common.task import Task
-from pyanaconda.anaconda_loggers import get_module_logger
-from pyanaconda.modules.network.nm_client import update_connection_values, \
-    commit_changes_with_autoconnection_blocked, nm_client_in_thread
-from pyanaconda.modules.network.utils import guard_by_system_configuration, is_nbft_device
-from pyanaconda.modules.network.nm_client import get_config_file_connection_of_device
 from pyanaconda.modules.network.config_file import IFCFG_DIR, KEYFILE_DIR
+from pyanaconda.modules.network.nm_client import (
+    commit_changes_with_autoconnection_blocked,
+    get_config_file_connection_of_device,
+    nm_client_in_thread,
+    update_connection_values,
+)
+from pyanaconda.modules.network.utils import (
+    guard_by_system_configuration,
+    is_nbft_device,
+)
 
 log = get_module_logger(__name__)
 
 import gi
+
 gi.require_version("NM", "1.0")
 from gi.repository import NM
 
@@ -84,6 +91,7 @@ def _write_config_file(root, path, content, error_msg, overwrite):
     """
     fpath = os.path.normpath(root + path)
     if os.path.isfile(fpath) and not overwrite:
+        log.debug("Not overwriting existing configuration file %s", fpath)
         return
     try:
         with open(fpath, "w") as fobj:

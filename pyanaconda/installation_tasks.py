@@ -22,19 +22,19 @@ import time
 
 from dasbus.error import DBusError
 
+from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.core import util
 from pyanaconda.core.constants import IPMI_ABORTED
 from pyanaconda.core.signal import Signal
-from pyanaconda.errors import errorHandler, ERROR_RAISE
-from pyanaconda.modules.common.errors.runtime import ScriptError
+from pyanaconda.errors import ERROR_RAISE, errorHandler
 from pyanaconda.flags import flags
+from pyanaconda.modules.common.errors.runtime import ScriptError
 from pyanaconda.modules.common.task import sync_run_task
-from pyanaconda.anaconda_loggers import get_module_logger
 
 log = get_module_logger(__name__)
 
 
-class BaseTask(object):
+class BaseTask:
     """A base class for Task and TaskQueue.
 
     It holds shared methods, properties and signals.
@@ -249,7 +249,7 @@ class Task(BaseTask):
         super().__init__(task_name)
         self._task_cb = task_cb
         self._task_args = task_args or []
-        self._task_kwargs = task_kwargs or dict()
+        self._task_kwargs = task_kwargs or {}
 
     @property
     def summary(self):

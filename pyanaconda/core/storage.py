@@ -16,16 +16,20 @@
 # Red Hat, Inc.
 #
 import os
-
 from decimal import Decimal
 
 from blivet import udev
 from blivet.size import Size
 from blivet.util import total_memory
+from pykickstart.constants import (
+    AUTOPART_TYPE_BTRFS,
+    AUTOPART_TYPE_LVM,
+    AUTOPART_TYPE_LVM_THINP,
+    AUTOPART_TYPE_PLAIN,
+)
+
 from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.core.i18n import N_
-from pykickstart.constants import AUTOPART_TYPE_PLAIN, AUTOPART_TYPE_BTRFS, AUTOPART_TYPE_LVM, \
-    AUTOPART_TYPE_LVM_THINP
 
 log = get_module_logger(__name__)
 
@@ -242,7 +246,7 @@ def _is_device_name_disk(device_name, devicetree=None, refresh_udev_cache=False)
                 # so we cache it in this non-elegant way.
                 # An unfortunate side effect of this is that udev devices that show up after
                 # this function is called for the first time will not be taken into account.
-                _udev_device_dict_cache = dict()
+                _udev_device_dict_cache = {}
 
                 for d in udev.get_devices():
                     # Add the device name to the cache.
