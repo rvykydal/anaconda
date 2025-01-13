@@ -35,7 +35,6 @@ from pyanaconda.modules.security.security_interface import SecurityInterface
 from pyanaconda.modules.security.installation import ConfigureSELinuxTask, \
     RealmDiscoverTask, RealmJoinTask, ConfigureAuthselectTask, \
     ConfigureAuthconfigTask, ConfigureFingerprintAuthTask, PreconfigureFIPSTask, ConfigureFIPSTask
-from pyanaconda.modules.common.submodule_manager import SubmoduleManager
 
 from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
@@ -48,10 +47,10 @@ class SecurityService(KickstartService):
         super().__init__()
 
         # Initialize modules.
-        self._modules = SubmoduleManager()
+        self._modules = []
 
         self._certificates_module = CertificatesModule()
-        self._modules.add_module(self._certificates_module)
+        self._add_module(self._certificates_module)
 
         self.selinux_changed = Signal()
         self._selinux = SELinuxMode.DEFAULT
@@ -68,11 +67,16 @@ class SecurityService(KickstartService):
         self.realm_changed = Signal()
         self._realm = RealmData()
 
+    def _add_module(self, security_module):
+        """Add a base kickstart module."""
+        self._modules.append(security_module)
+
     def publish(self):
         """Publish the module."""
         TaskContainer.set_namespace(SECURITY.namespace)
 
-        self._modules.publish_modules()
+        for kickstart_module in self._modules:
+            kickstart_module.publish()
 
         DBus.publish_object(SECURITY.object_path, SecurityInterface(self))
         DBus.register_service(SECURITY.service_name)
@@ -84,7 +88,9 @@ class SecurityService(KickstartService):
 
     def process_kickstart(self, data):
         """Process the kickstart data."""
-        self._modules.process_kickstart(data)
+        # Process the kickstart data in modules.
+        for kickstart_module in self._modules:
+            kickstart_module.process_kickstart(data)
 
         if data.selinux.selinux is not None:
             self.set_selinux(SELinuxMode(data.selinux.selinux))
@@ -105,7 +111,8 @@ class SecurityService(KickstartService):
 
     def setup_kickstart(self, data):
         """Set up the kickstart data."""
-        self._modules.setup_kickstart(data)
+        for kickstart_module in self._modules:
+            kickstart_module.setup_kickstart(data)
 
         if self.selinux != SELinuxMode.DEFAULT:
             data.selinux.selinux = self.selinux.value
