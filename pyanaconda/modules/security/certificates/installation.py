@@ -19,7 +19,7 @@ import os
 
 from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.modules.common.task import Task
-from pyanaconda.core.path import make_directories, join_paths
+from pyanaconda.core.util import join_paths, mkdirChain
 
 log = get_module_logger(__name__)
 
@@ -47,7 +47,7 @@ class ImportCertificatesTask(Task):
         if not os.path.exists(dst_dir):
             log.debug("Path %s for certificate %s does not exist, creating.",
                       dst_dir, cert.filename)
-            make_directories(dst_dir)
+            mkdirChain(dst_dir)
 
         dst = join_paths(dst_dir, cert.filename)
         with open(dst, 'w') as f:
