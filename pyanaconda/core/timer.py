@@ -19,10 +19,10 @@
 #  Author(s):  Jiri Konecny <jkonecny@redhat.com>
 #
 
-from pyanaconda.core.glib import timeout_add, timeout_add_seconds, source_remove
+from pyanaconda.core.glib import source_remove, timeout_add, timeout_add_seconds
 
 
-class Timer(object):
+class Timer:
     """Object to schedule functions and methods to the GLib event loop.
 
     Everything scheduled by Timer is ran on the main thread!

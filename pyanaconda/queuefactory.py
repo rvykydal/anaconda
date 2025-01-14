@@ -17,10 +17,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import queue
-from pyanaconda.core.string import upper_ascii, lower_ascii
+
+from pyanaconda.core.string import lower_ascii, upper_ascii
 
 
-class QueueFactory(object):
+class QueueFactory:
     """Constructs a new object wrapping a Queue.Queue, complete with constants
        and sending functions for each type of message that can be put into the
        queue.

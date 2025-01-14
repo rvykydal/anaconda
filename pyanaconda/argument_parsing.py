@@ -19,21 +19,27 @@
 DESCRIPTION = "Anaconda is the installation program used by Fedora, " \
               "Red Hat Enterprise Linux and some other distributions."
 
+import fcntl
 import itertools
 import os
-import sys
-import fcntl
-import termios
 import struct
-
-from argparse import ArgumentParser, ArgumentError, HelpFormatter, Namespace, Action, SUPPRESS
+import sys
+import termios
+from argparse import (
+    SUPPRESS,
+    Action,
+    ArgumentError,
+    ArgumentParser,
+    HelpFormatter,
+    Namespace,
+)
 
 from blivet.arch import is_s390
 
-from pyanaconda.core.kernel import KernelArguments
-from pyanaconda.core.constants import DisplayModes, X_TIMEOUT, VIRTIO_PORT
-
 from pyanaconda.anaconda_loggers import get_module_logger
+from pyanaconda.core.constants import VIRTIO_PORT, X_TIMEOUT, DisplayModes
+from pyanaconda.core.kernel import KernelArguments
+
 log = get_module_logger(__name__)
 
 # Help text formatting constants
@@ -93,7 +99,7 @@ class AnacondaArgumentParser(ArgumentParser):
             True: ignore the argument without the prefix. (default)
         """
         help_width = get_help_width()
-        self._boot_arg = dict()
+        self._boot_arg = {}
         self.bootarg_prefix = kwargs.pop("bootarg_prefix", "")
         self.require_prefix = kwargs.pop("require_prefix", True)
 
@@ -307,14 +313,17 @@ def name_path_pairs(image_specs):
             name = os.path.splitext(os.path.basename(path))[0]
 
         if name in names_seen:
-            names = ("%s_%d" % (name, n) for n in itertools.count())
-            name = next(itertools.dropwhile(lambda n: n in names_seen, names))
+            for n in itertools.count():
+                candidate = "%s_%d" % (name, n)
+                if candidate not in names_seen:
+                    name = candidate
+                    break
         names_seen.append(name)
 
         yield name, path
 
 
-class HelpTextParser(object):
+class HelpTextParser:
     """Class to parse help text from file and make it available to option
        parser.
     """
@@ -509,6 +518,7 @@ def getArgumentParser(version_string, boot_cmdline=None):
                     help=help_parser.help_text("virtiolog"))
 
     from pykickstart.constants import SELINUX_DISABLED, SELINUX_ENFORCING
+
     from pyanaconda.core.constants import SELINUX_DEFAULT
     ap.add_argument("--noselinux", dest="selinux", action="store_const",
                     const=SELINUX_DISABLED, default=SELINUX_DEFAULT,

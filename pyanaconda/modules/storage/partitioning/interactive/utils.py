@@ -22,25 +22,37 @@ import re
 
 from blivet import devicefactory
 from blivet.devicelibs import crypto, raid
-from blivet.devices import LUKSDevice, MDRaidArrayDevice, LVMVolumeGroupDevice
+from blivet.devices import LUKSDevice, LVMVolumeGroupDevice, MDRaidArrayDevice
 from blivet.errors import StorageError
 from blivet.formats import get_format
 from blivet.size import Size
 
 from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.core.i18n import _
-from pyanaconda.modules.common.errors.configuration import StorageConfigurationError
-from pyanaconda.modules.common.errors.storage import UnsupportedDeviceError, UnknownDeviceError
-from pyanaconda.modules.common.structures.device_factory import DeviceFactoryRequest, \
-    DeviceFactoryPermissions
-from pyanaconda.modules.storage.disk_initialization import DiskInitializationConfig
-from pyanaconda.modules.storage.platform import platform, PLATFORM_MOUNT_POINTS
 from pyanaconda.core.product import get_product_name, get_product_version
+from pyanaconda.core.storage import (
+    CONTAINER_DEVICE_TYPES,
+    DEVICE_TEXT_MAP,
+    NAMED_DEVICE_TYPES,
+    PARTITION_ONLY_FORMAT_TYPES,
+    SUPPORTED_DEVICE_TYPES,
+)
+from pyanaconda.modules.common.errors.configuration import StorageConfigurationError
+from pyanaconda.modules.common.errors.storage import (
+    UnknownDeviceError,
+    UnsupportedDeviceError,
+)
+from pyanaconda.modules.common.structures.device_factory import (
+    DeviceFactoryPermissions,
+    DeviceFactoryRequest,
+)
 from pyanaconda.modules.storage.devicetree.root import Root
-from pyanaconda.modules.storage.devicetree.utils import get_supported_filesystems, \
-    is_supported_filesystem
-from pyanaconda.core.storage import DEVICE_TEXT_MAP, PARTITION_ONLY_FORMAT_TYPES, \
-    NAMED_DEVICE_TYPES, CONTAINER_DEVICE_TYPES, SUPPORTED_DEVICE_TYPES
+from pyanaconda.modules.storage.devicetree.utils import (
+    get_supported_filesystems,
+    is_supported_filesystem,
+)
+from pyanaconda.modules.storage.disk_initialization import DiskInitializationConfig
+from pyanaconda.modules.storage.platform import PLATFORM_MOUNT_POINTS, platform
 
 log = get_module_logger(__name__)
 
@@ -506,12 +518,12 @@ def resize_device(storage, device, new_size, old_size):
     # And then we need to re-check that the max size is actually
     # different from the current size.
 
-    if use_size == device.size or use_size == device.raw_device.size:
+    if use_size in (device.size, device.raw_device.size):
         # The size hasn't changed.
         log.debug("Canceled resize of device %s to %s.", device.raw_device.name, use_size)
         return False
 
-    if new_size == device.current_size or use_size == device.current_size:
+    if device.current_size in (new_size, use_size):
         # The size has been set back to its original value.
         log.debug("Removing resize of device %s.", device.raw_device.name)
 

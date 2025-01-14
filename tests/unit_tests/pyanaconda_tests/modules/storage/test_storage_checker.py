@@ -19,10 +19,11 @@
 # Red Hat Author(s): Vendula Poncova <vponcova@redhat.com>
 #
 import unittest
-import pytest
-import pyanaconda.modules.storage.checker.utils as checks
 
+import pytest
 from blivet.size import Size
+
+import pyanaconda.modules.storage.checker.utils as checks
 from pyanaconda.modules.storage.checker.utils import StorageChecker
 
 
@@ -230,7 +231,7 @@ class StorageCheckerTests(unittest.TestCase):
                 '/home': Size("100 MiB"),
                 '/boot': Size("512 MiB")
             },
-            checks.STORAGE_REQ_PARTITION_SIZES: dict(),
+            checks.STORAGE_REQ_PARTITION_SIZES: {},
             checks.STORAGE_MUST_BE_ON_LINUXFS: {
                 '/', '/var', '/tmp', '/usr', '/home', '/usr/share', '/usr/lib'
             },

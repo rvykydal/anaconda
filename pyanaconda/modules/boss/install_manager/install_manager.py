@@ -16,14 +16,14 @@
 # License and may only be used or replicated with the express permission of
 # Red Hat, Inc.
 #
+from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.core.dbus import DBus
 from pyanaconda.modules.common.structures.requirement import Requirement
 
-from pyanaconda.anaconda_loggers import get_module_logger
 log = get_module_logger(__name__)
 
 
-class InstallManager(object):
+class InstallManager:
     """Manager of the system installation."""
 
     def __init__(self):

@@ -20,16 +20,22 @@
 #
 
 import logging
-from logging.handlers import SysLogHandler, SocketHandler
-from systemd import journal
 import os
 import sys
 import warnings
+from logging.handlers import SocketHandler, SysLogHandler
+
+from systemd import journal
 
 from pyanaconda.core import constants
+from pyanaconda.core.glib import (
+    LogLevelFlags,
+    LogWriterOutput,
+    log_set_handler,
+    log_set_writer_func,
+    log_writer_format_fields,
+)
 from pyanaconda.core.path import set_mode
-from pyanaconda.core.glib import log_set_handler, log_set_writer_func, log_writer_format_fields, \
-      LogLevelFlags, LogWriterOutput
 
 ENTRY_FORMAT = "%(asctime)s,%(msecs)03d %(levelname)s %(name)s: %(message)s"
 STDOUT_FORMAT = "%(asctime)s %(message)s"
@@ -45,10 +51,11 @@ ANACONDA_SYSLOG_FACILITY = SysLogHandler.LOG_LOCAL1
 ANACONDA_SYSLOG_IDENTIFIER = "anaconda"
 
 from threading import Lock
+
 program_log_lock = Lock()
 
 
-class _AnacondaLogFixer(object):
+class _AnacondaLogFixer:
     """ A mixin for logging.StreamHandler that does not lock during format.
 
         Add this mixin before the Handler type in the inheritance order.
@@ -74,7 +81,7 @@ class _AnacondaLogFixer(object):
         # Wrap the stream write in a lock acquisition
         # Use an object proxy in order to work with types that may not allow
         # the write property to be set.
-        class WriteProxy(object):
+        class WriteProxy:
 
             def write(self, *args, **kwargs):
                 handler.acquire()  # pylint: disable=no-member
@@ -149,7 +156,7 @@ class AnacondaPrefixFilter(logging.Filter):
         return True
 
 
-class AnacondaLog(object):
+class AnacondaLog:
     SYSLOG_CFGFILE = "/etc/rsyslog.conf"
 
     def __init__(self, write_to_journal=False):

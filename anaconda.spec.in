@@ -38,12 +38,12 @@ Source0: https://github.com/rhinstaller/%{name}/releases/download/%{name}-%{vers
 %define libreportanacondaver 2.0.21-1
 %define mehver 0.23-1
 %define nmver 1.0
-%define pykickstartver 3.58-1
+%define pykickstartver 3.61-1
 %define pypartedver 2.5-2
 %define pythonblivetver 1:3.9.0-1
 %define rpmver 4.15.0
 %define simplelinever 1.9.0-1
-%define subscriptionmanagerver 1.26
+%define subscriptionmanagerver 1.29.31
 %define utillinuxver 2.15.1
 %define rpmostreever 2023.2
 %define s390utilscorever 2.31.0
@@ -490,6 +490,37 @@ rm -rf \
 %{_prefix}/libexec/anaconda/dd_*
 
 %changelog
+* Fri Dec 20 2024 github-actions <github-actions@github.com> - 42.21-1
+- translations: bump dependency to l10n repo because of branch switch
+  (k.koukiou)
+- pyanaconda: module_manager: fix ciclic import (k.koukiou)
+- pyanaconda: bootloader: fix ImportError (k.koukiou)
+- ruff: enable isort rules and autofix all isort warnings (k.koukiou)
+- Fix useless-return pylint rule (k.koukiou)
+- Fix use-dict-literal pylint rule (k.koukiou)
+- Fix use-list-literal pylint rule (k.koukiou)
+- Fix useless-object-inheritance pylint rule (k.koukiou)
+- Fix stop-iteration-return pylint rule (k.koukiou)
+- Fix consider-using-in pylint rule (k.koukiou)
+- Fix consider-using-from-import pylint rule (k.koukiou)
+- Fix comparison-with-itself pylint rule (k.koukiou)
+- Fix super-with-arguments pylint rule (k.koukiou)
+- Fix use-a-generator pylint rule (k.koukiou)
+- Fix simplifiable-if-expression and simplifiable-if-statement pylint rules
+  (k.koukiou)
+
+* Tue Dec 17 2024 github-actions <github-actions@github.com> - 42.20-1
+- Subscription code updates - adjust unit tests (mkolman)
+- Subscription code updates - GTK GUI (mkolman)
+- Subscription code updates - backend (mkolman)
+- Bump minimal subscription manager versions (mkolman)
+- network: improve logging of writing configuration (rvykydal)
+
+* Tue Dec 10 2024 github-actions <github-actions@github.com> - 42.19-1
+- Avoid side effect of ask rdp methods (jkonecny)
+- Do not crash if RDP is selected after regular GUI startup failed (#2326410)
+  (mkolman)
+
 * Tue Dec 03 2024 github-actions <github-actions@github.com> - 42.18-1
 - efi: Update __all__ dictionary (abologna)
 - docs: fix test container update doc (rvykydal)

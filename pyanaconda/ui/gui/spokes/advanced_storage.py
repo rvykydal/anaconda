@@ -18,27 +18,34 @@
 #
 from collections import namedtuple
 
+import gi
 from blivet.size import Size
 
 from pyanaconda.anaconda_loggers import get_module_logger
 from pyanaconda.core.i18n import CN_, CP_
-from pyanaconda.modules.common.structures.storage import DeviceData
-from pyanaconda.ui.lib.storage import apply_disk_selection, try_populate_devicetree, \
-    filter_disks_by_names
-from pyanaconda.modules.common.constants.objects import DISK_SELECTION, FCOE, ISCSI, DASD, \
-    DEVICE_TREE
+from pyanaconda.modules.common.constants.objects import (
+    DASD,
+    DEVICE_TREE,
+    DISK_SELECTION,
+    FCOE,
+    ISCSI,
+)
 from pyanaconda.modules.common.constants.services import STORAGE
-
-from pyanaconda.ui.gui.utils import timed_action, really_show, really_hide
+from pyanaconda.modules.common.structures.storage import DeviceData
+from pyanaconda.ui.categories.system import SystemCategory
 from pyanaconda.ui.gui.spokes import NormalSpoke
+from pyanaconda.ui.gui.spokes.advstorage.dasd import DASDDialog
 from pyanaconda.ui.gui.spokes.advstorage.fcoe import FCoEDialog
 from pyanaconda.ui.gui.spokes.advstorage.iscsi import ISCSIDialog
 from pyanaconda.ui.gui.spokes.advstorage.zfcp import ZFCPDialog
-from pyanaconda.ui.gui.spokes.advstorage.dasd import DASDDialog
 from pyanaconda.ui.gui.spokes.lib.cart import SelectedDisksDialog
-from pyanaconda.ui.categories.system import SystemCategory
+from pyanaconda.ui.gui.utils import really_hide, really_show, timed_action
+from pyanaconda.ui.lib.storage import (
+    apply_disk_selection,
+    filter_disks_by_names,
+    try_populate_devicetree,
+)
 
-import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
@@ -111,7 +118,7 @@ def create_row(device_data, selected, mutable):
     )
 
 
-class FilterPage(object):
+class FilterPage:
     """A FilterPage is the logic behind one of the notebook tabs on the filter
        UI spoke.  Each page has its own specific filtered model overlaid on top
        of a common model that holds all non-advanced disks.
@@ -361,7 +368,7 @@ class OtherPage(FilterPage):
         self._vendor_combo = self._builder.get_object("otherVendorCombo")
 
     def is_member(self, device_type):
-        return device_type == "iscsi" or device_type == "fcoe"
+        return device_type in ("iscsi", "fcoe")
 
     def setup(self, store, disks, selected_names, protected_names):
         vendors = set()
@@ -418,7 +425,7 @@ class ZPage(FilterPage):
         self._wwpn_entry.set_text("")
 
     def is_member(self, device_type):
-        return device_type == "zfcp" or device_type == "dasd"
+        return device_type in ("zfcp", "dasd")
 
     def setup(self, store, disks, selected_names, protected_names):
         """ Set up our Z-page, but only if we're running on s390x. """

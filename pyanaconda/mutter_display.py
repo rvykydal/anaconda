@@ -17,10 +17,10 @@
 #
 
 from dasbus.client.observer import DBusObserver
-from pyanaconda.core.dbus import SessionBus
-from pyanaconda.modules.common.constants.services import MUTTER_DISPLAY_CONFIG
-from pyanaconda.core.regexes import SCREEN_RESOLUTION_CONFIG
 
+from pyanaconda.core.dbus import SessionBus
+from pyanaconda.core.regexes import SCREEN_RESOLUTION_CONFIG
+from pyanaconda.modules.common.constants.services import MUTTER_DISPLAY_CONFIG
 
 __all__ = ['MutterConfigError', 'MutterDisplay']
 
@@ -30,7 +30,7 @@ class MutterConfigError(Exception):
     pass
 
 
-class MonitorId(object):
+class MonitorId:
     """Collection of properties that identify a unique monitor."""
 
     def __init__(self, props):
@@ -46,7 +46,7 @@ class MonitorId(object):
                self.serial == other.serial
 
 
-class MonitorMode(object):
+class MonitorMode:
     """Available modes for a monitor."""
 
     def __init__(self, props):
@@ -59,7 +59,7 @@ class MonitorMode(object):
         self.properties = props[6]
 
 
-class Monitor(object):
+class Monitor:
     """Represent a connected physical monitor."""
 
     def __init__(self, props):
@@ -68,7 +68,7 @@ class Monitor(object):
         self.properties = props[2]
 
 
-class LogicalMonitor(object):
+class LogicalMonitor:
     """Represent the current logical monitor configuration"""
 
     def __init__(self, props):
@@ -81,7 +81,7 @@ class LogicalMonitor(object):
         self.properties = props[6]
 
 
-class LogicalMonitorConfig(object):
+class LogicalMonitorConfig:
     """Logical monitor configuration object"""
 
     def __init__(self, logical_monitor, monitors, x, y, width, height):
@@ -95,7 +95,7 @@ class LogicalMonitorConfig(object):
         self.transform = logical_monitor.transform
         self.primary = logical_monitor.primary
 
-        self.monitors = list()
+        self.monitors = []
         for monitor_id in logical_monitor.monitor_ids:
             connector = monitor_id.connector
             mode_id = self._get_matching_monitor_mode_id(monitors, monitor_id, width, height)
@@ -120,7 +120,7 @@ class LogicalMonitorConfig(object):
         )
 
 
-class MutterDisplay(object):
+class MutterDisplay:
     """Class wrapping Mutter's display configuration API."""
 
     def __init__(self):
@@ -155,7 +155,7 @@ class MutterDisplay(object):
         # Align the monitors in a row starting at X coordinate 0
         x = 0
 
-        configs = list()
+        configs = []
         for logical_monitor in logical_monitors:
             config = LogicalMonitorConfig(logical_monitor, monitors, x, 0, width, height)
             x += width

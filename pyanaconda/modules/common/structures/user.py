@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-from dasbus.structure import DBusData
-
-from dasbus.structure import generate_string_from_data
+from dasbus.structure import DBusData, generate_string_from_data
 from dasbus.typing import *  # pylint: disable=wildcard-import
 
 from pyanaconda.core.constants import ID_MODE_USE_DEFAULT, ID_MODE_USE_VALUE
@@ -33,7 +31,7 @@ class UserData(DBusData):
         self._name = ""
         self._uid = 0
         self._uid_mode = ID_MODE_USE_DEFAULT
-        self._groups = list()
+        self._groups = []
         self._gid = 0
         self._gid_mode = ID_MODE_USE_DEFAULT
         self._homedir = ""

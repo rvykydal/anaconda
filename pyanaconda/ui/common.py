@@ -16,21 +16,21 @@
 # License and may only be used or replicated with the express permission of
 # Red Hat, Inc.
 #
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 
-from pyanaconda.core.configuration.anaconda import conf
-from pyanaconda.core.constants import ANACONDA_ENVIRON, FIRSTBOOT_ENVIRON
-from pyanaconda.core.util import collect
-from pyanaconda.core.signal import Signal
-from pyanaconda.ui.categories import SpokeCategory
-from pyanaconda.ui.lib.services import is_reconfiguration_mode
 from pyanaconda import lifecycle
 from pyanaconda.anaconda_loggers import get_module_logger
+from pyanaconda.core.configuration.anaconda import conf
+from pyanaconda.core.constants import ANACONDA_ENVIRON, FIRSTBOOT_ENVIRON
+from pyanaconda.core.signal import Signal
+from pyanaconda.core.util import collect
+from pyanaconda.ui.categories import SpokeCategory
+from pyanaconda.ui.lib.services import is_reconfiguration_mode
 
 log = get_module_logger(__name__)
 
 
-class UIObject(object):
+class UIObject:
     """This is the base class from which all other UI classes are derived.  It
        thus contains only attributes and methods that are common to everything
        else.  It should not be directly instantiated.
@@ -101,7 +101,7 @@ class UIObject(object):
         return self._data
 
 
-class FirstbootSpokeMixIn(object):
+class FirstbootSpokeMixIn:
     """This MixIn class marks Spokes as usable for Firstboot
        and Anaconda.
     """
@@ -134,7 +134,7 @@ class FirstbootSpokeMixIn(object):
         return False
 
 
-class FirstbootOnlySpokeMixIn(object):
+class FirstbootOnlySpokeMixIn:
     """This MixIn class marks Spokes as usable for Firstboot."""
     @classmethod
     def should_run(cls, environment, data):
@@ -148,13 +148,10 @@ class FirstbootOnlySpokeMixIn(object):
            the data argument.
         """
 
-        if environment == FIRSTBOOT_ENVIRON:
-            # firstboot only spokes should run in firstboot by default, spokes
-            # that should run even if not doing reconfig should override this
-            # method
-            return True
-        else:
-            return False
+        # firstboot only spokes should run in firstboot by default, spokes
+        # that should run even if not doing reconfig should override this
+        # method
+        return environment == FIRSTBOOT_ENVIRON
 
 
 class Screen(ABC):

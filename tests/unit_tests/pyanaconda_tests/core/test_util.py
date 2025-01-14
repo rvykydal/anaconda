@@ -16,26 +16,26 @@
 # License and may only be used or replicated with the express permission of
 # Red Hat, Inc.
 
-import unittest
 import os
-import tempfile
 import signal
 import sys
-import pytest
-
-from threading import Lock
-from unittest.mock import Mock, patch
-from timer import timer
+import tempfile
+import unittest
 from io import StringIO
 from textwrap import dedent
+from threading import Lock
+from unittest.mock import Mock, patch
 
-from pyanaconda.core.path import make_directories
-from pyanaconda.errors import ExitError
-from pyanaconda.core.process_watchers import WatchProcesses
+import pytest
+from timer import timer
+
 from pyanaconda.core import util
-from pyanaconda.core.util import synchronized, LazyObject, is_stage2_on_nfs
 from pyanaconda.core.configuration.anaconda import conf
 from pyanaconda.core.live_user import User
+from pyanaconda.core.path import make_directories
+from pyanaconda.core.process_watchers import WatchProcesses
+from pyanaconda.core.util import LazyObject, is_stage2_on_nfs, synchronized
+from pyanaconda.errors import ExitError
 
 
 class RunProgramTests(unittest.TestCase):
@@ -641,7 +641,7 @@ class MiscTests(unittest.TestCase):
 
         # The @synchronized decorator work on methods of classes
         # that provide self._lock with Lock or RLock instance.
-        class LockableClass(object):
+        class LockableClass:
             def __init__(self):
                 self._lock = Lock()
 
@@ -659,7 +659,7 @@ class MiscTests(unittest.TestCase):
         assert lockable.sync_test_method()
 
         # The @synchronized decorator does not work on classes without self._lock.
-        class NotLockableClass(object):
+        class NotLockableClass:
             @synchronized
             def sync_test_method(self):
                 return "Hello world!"
@@ -863,7 +863,7 @@ class MiscTests(unittest.TestCase):
 
 class LazyObjectTestCase(unittest.TestCase):
 
-    class Object(object):
+    class Object:
 
         def __init__(self):
             self._x = 0
@@ -925,10 +925,6 @@ class LazyObjectTestCase(unittest.TestCase):
 
         assert lazy_a1 == lazy_a2
         assert lazy_a2 == lazy_a1
-
-        # ruff: noqa: PLR0124
-        assert lazy_a1 == lazy_a1
-        assert lazy_a2 == lazy_a2
 
     def test_neq(self):
         a = object()

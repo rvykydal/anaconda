@@ -27,7 +27,7 @@ The overall workflow can be summarized to 3 steps:
 - Packit PR in Fedora distgit
 - start build in Fedora distgit
 
-0. have an up to date Anaconda repo clone and ``master`` branch checked out
+0. have an up to date Anaconda repo clone and ``main`` branch checked out
 
 1. tag an Anaconda release:
 
@@ -37,11 +37,11 @@ The overall workflow can be summarized to 3 steps:
 
 2. check the commit and tag are correct
 
-3. push the master branch to the remote
+3. push the main branch to the remote
 
 ::
 
-      git push master --tags
+      git push main --tags
 
 4. this should trigger a GitHub workflow that will create a new Anaconda release + release tarball, taking ~10 minutes
 
@@ -108,11 +108,11 @@ environment way see mock path below. It is also fully manual.
 
 3. check the commit and tag are correct
 
-4. push the master branch to the remote
+4. push the main branch to the remote
 
 ::
 
-    git push master --tags
+    git push main --tags
 
 5. configure anaconda
 
@@ -180,7 +180,7 @@ environment way see mock path below. It is also fully manual.
 
 
 Upcoming Fedora release & package build
-========================================
+----------------------------------------
 
 Creating an anaconda release and build for an upcoming Fedora release is pretty similar to a Rawhide build
 with a few key differences:
@@ -217,7 +217,7 @@ A link to the update should be returned and you should also start getting regula
 anything remotely interesting happens with the update. :)
 
 Releasing during a Fedora code freeze
-=====================================
+-------------------------------------
 
 There are two generally multi-week phases during which the upcoming Fedora release development a temporary code freeze:
 
@@ -232,7 +232,7 @@ If there is a merged PR that has not been approved for a FE or release blocker, 
 targeting the frozen Fedora.
 
 Branching for the next Fedora release
-=====================================
+-------------------------------------
 
 Anaconda uses separate branch for each Fedora release to make parallel Anaconda development for Rawhide and next Fedora release possible.
 The branch is named fedora-<version>.
@@ -244,7 +244,7 @@ and release blocker fixes.
 
 
 Create new localization directory for Anaconda
-----------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 First thing which needs to be done before branching in Anaconda is to create a new localization directory which will be used by the new Anaconda branch.
 
@@ -255,11 +255,11 @@ Start by cloning translation repository (ideally outside of Anaconda git) and en
    git clone git@github.com:rhinstaller/anaconda-l10n.git
    cd anaconda-l10n
 
-Create a new localization directory from ``master`` directory:
+Create a new localization directory from ``main`` directory:
 
 ::
 
-   cp -r master f<version>
+   cp -r main f<version>
 
 Add the new folder to git:
 
@@ -271,7 +271,7 @@ Commit these changes:
 
 ::
 
-   git commit -m "Branch new Fedora <version> from master"
+   git commit -m "Branch new Fedora <version> from main"
 
 Push new localization directory. This will be automatically discovered and added by
 `Weblate <https://translate.fedoraproject.org/projects/anaconda/>`_ service:
@@ -282,7 +282,7 @@ Push new localization directory. This will be automatically discovered and added
 
 
 Adjust localization update automation
--------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 In the ``anaconda-l10n`` repository, the update automation needs to work on the new directory.
 
@@ -297,7 +297,7 @@ Update the matrix. For example, for f39 we had:
 ::
 
       matrix:
-        branch: [ master, f39, rhel-9 ]
+        branch: [ main, f39, rhel-9 ]
         include:
           (...)
           - branch: f39
@@ -318,7 +318,7 @@ Push the changes:
 
 
 Enable Cockpit CI for the new branch
--------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Anaconda is using the Cockpit CI infrastructure to run Web UI test. Cockpit CI tests are triggered
 automatically for all `listed <https://github.com/cockpit-project/bots/blob/main/lib/testmap.py>`_ projects and per-project branches. To enable Cockpit CI in automatic mode for the new Fedora branch, our new fedora-<version> upstream branch needs to be added under the 'rhinstaller/anaconda' key in the file. See the previous PR (for F39) to see how this is to be done:
@@ -326,7 +326,7 @@ automatically for all `listed <https://github.com/cockpit-project/bots/blob/main
 https://github.com/cockpit-project/bots/pull/5176
 
 How to branch Anaconda
-----------------------
+^^^^^^^^^^^^^^^^^^^^^^
 
 First make sure that localization branch for the next Fedora is already created.
 
@@ -334,7 +334,7 @@ Create the fedora-<version> upstream branch:
 
 ::
 
-    git checkout master
+    git checkout main
     git pull
     git checkout -b fedora-<version>
 
@@ -384,11 +384,11 @@ If everything works correctly you can push the branch to the origin (``-u`` make
     git checkout fedora-<version>
     git push -u origin fedora-<version>
 
-After the branching is done, you also need to update infrastructure on the ``master`` branch. Switch to that branch:
+After the branching is done, you also need to update infrastructure on the ``main`` branch. Switch to that branch:
 
 ::
 
-    git switch master
+    git switch main
 
 Edit branch specific settings:
 
@@ -404,21 +404,21 @@ Expect changes only in Github workflows that generate containers etc. for multip
     make -f Makefile.am reload-infra
     git commit -a -m "infra: Configure for the new fedora-NN branch"
 
-Then, finally, push the updated master branch:
+Then, finally, push the updated main branch:
 
 ::
 
-    git push origin master
+    git push origin main
 
 Container rebuilds after branching
-----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Container rebuilds currently do not happen automatically after branching. So do not forget to rebuild
 all relevant containers after Fedora branching.
 
 
 How to add release version for next Fedora
-------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The current practise is to keep the Rawhide major & minor version from which the
 given Anaconda was branched as-is and add a third version number (the release number
@@ -451,7 +451,7 @@ If everything looks fine (changelog, the version number & tag) push the changes 
 Then continue with the normal Upcoming Fedora Anaconda build process.
 
 How to bump Rawhide Anaconda version
-------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - major version becomes major version ``+1``
 - minor version is set to 1
@@ -465,7 +465,7 @@ Make sure you are in the Rawhide branch:
 
 ::
 
-    git checkout master
+    git checkout main
 
 Do the major version bump and verify that the output looks correct:
 
@@ -477,13 +477,13 @@ If everything looks fine (changelog, new major version & the tag) push the chang
 
 ::
 
-    git push origin master --tags
+    git push origin main --tags
 
 Then continue with the normal Rawhide Anaconda build process.
 
 
 How to use a new Python version
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Fedora changes Python version from time to time.
 
@@ -507,12 +507,12 @@ a Python release candidate (rc). This affects two things:
 
 
 How to collect release notes after branched GA release
-------------------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Release notes are collected in ``docs/release-notes/*.rst``. When a major Fedora version goes GA,
 these should be collected into the file ``docs/release-notes.rst``. To do so:
 
-0. Work on the master branch. Edit the file. New content is added on top.
+0. Work on the main branch. Edit the file. New content is added on top.
 1. Create a heading for new Fedora version and subheadings for the broader areas. The previous
    entry can provide some guidance.
 2. Copy the individual release notes contents into the document according to the headings, and edit
@@ -523,4 +523,4 @@ these should be collected into the file ``docs/release-notes.rst``. To do so:
 5. Commit and make a PR.
 
 The branch used for the release is not touched. This might be surprising, but docs are always used
-from the ``master`` branch.
+from the ``main`` branch.

@@ -21,13 +21,14 @@
 import threading
 
 from pyanaconda.anaconda_loggers import get_module_logger
+
 log = get_module_logger(__name__)
 
 
 _WORKER_THREAD_PREFIX = "AnaWorkerThread"
 
 
-class ThreadManager(object):
+class ThreadManager:
     """A singleton class for managing threads and processes.
 
        Notes:
@@ -221,7 +222,7 @@ class AnacondaThread(threading.Thread):
     """
 
     # class-wide dictionary ensuring unique thread names
-    _prefix_thread_counts = dict()
+    _prefix_thread_counts = {}
 
     def __init__(self, *args, **kwargs):
         # if neither name nor prefix is given, use the worker prefix

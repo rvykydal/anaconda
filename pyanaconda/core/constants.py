@@ -24,7 +24,6 @@ from enum import Enum
 from pyanaconda.core.i18n import N_
 from pyanaconda.core.product import get_product_name, get_product_version
 
-
 # Use -1 to indicate that the selinux configuration is unset
 SELINUX_DEFAULT = -1
 
@@ -527,3 +526,6 @@ CATEGORY_STORAGE = "STORAGE_CONFIGURATION"
 CATEGORY_SOFTWARE = "SOFTWARE_INSTALLATION"
 CATEGORY_BOOTLOADER = "BOOTLOADER_INSTALLATION"
 CATEGORY_SYSTEM = "SYSTEM_CONFIGURATION"
+
+# Installation phases
+INSTALLATION_PHASE_PREINSTALL = "pre-install"

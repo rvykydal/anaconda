@@ -20,12 +20,11 @@
 
 import pwquality
 
-from pyanaconda.core.signal import Signal
+from pyanaconda.anaconda_loggers import get_module_logger
+from pyanaconda.core import constants, regexes, users
 from pyanaconda.core.i18n import _
 from pyanaconda.core.kernel import kernel_arguments
-from pyanaconda.core import constants, regexes
-from pyanaconda.core import users
-from pyanaconda.anaconda_loggers import get_module_logger
+from pyanaconda.core.signal import Signal
 from pyanaconda.modules.common.constants.objects import USER_INTERFACE
 from pyanaconda.modules.common.constants.services import RUNTIME
 from pyanaconda.modules.common.structures.policy import PasswordPolicy
@@ -48,7 +47,7 @@ def get_policy(policy_name) -> PasswordPolicy:
     return PasswordPolicy.from_defaults(policy_name)
 
 
-class PwqualitySettingsCache(object):
+class PwqualitySettingsCache:
     """Cache for libpwquality settings used for password validation.
 
     Libpwquality settings instantiation is probably not exactly cheap
@@ -75,7 +74,7 @@ class PwqualitySettingsCache(object):
 pwquality_settings_cache = PwqualitySettingsCache()
 
 
-class PasswordCheckRequest(object):
+class PasswordCheckRequest:
     """A wrapper for a password check request.
 
     This in general means the password to be checked as well as its validation criteria
@@ -200,7 +199,7 @@ class PasswordCheckRequest(object):
         self._secret_type = new_type
 
 
-class CheckResult(object):
+class CheckResult:
     """Result of an input check."""
 
     def __init__(self):
@@ -312,7 +311,7 @@ class PasswordValidityCheckResult(CheckResult):
         self.length_ok_changed.emit(value)
 
 
-class InputCheck(object):
+class InputCheck:
     """Input checking base class."""
 
     def __init__(self):
@@ -571,7 +570,7 @@ class FullnameCheck(InputCheck):
             self.result.success = False
 
 
-class InputField(object):
+class InputField:
     """An input field containing data to be checked.
 
     The input field can have an initial value that can be
@@ -602,7 +601,7 @@ class InputField(object):
                 self._initial_change_signal_fired = True
 
 
-class PasswordChecker(object):
+class PasswordChecker:
     """Run multiple password and input checks in a given order and report the results.
 
     All added checks (in insertion order) will be run and results returned as error message

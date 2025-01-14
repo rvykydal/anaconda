@@ -24,7 +24,7 @@ from blivet.devicelibs import raid
 from blivet.size import Size
 
 from pyanaconda.anaconda_loggers import get_module_logger
-from pyanaconda.core.i18n import _, N_
+from pyanaconda.core.i18n import N_, _
 from pyanaconda.modules.storage.partitioning.specification import PartSpec
 
 log = get_module_logger(__name__)
@@ -48,7 +48,7 @@ DASD_DESCRIPTION = N_("DASD")
 ZFCP_DESCRIPTION = N_("zFCP")
 
 
-class Platform(object):
+class Platform:
     """A base class for a platform.
 
     A class containing platform-specific information and methods for use

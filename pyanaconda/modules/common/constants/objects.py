@@ -17,9 +17,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 from dasbus.identifier import DBusObjectIdentifier
-from pyanaconda.modules.common.constants.namespaces import STORAGE_NAMESPACE, NETWORK_NAMESPACE, \
-    PARTITIONING_NAMESPACE, DEVICE_TREE_NAMESPACE, \
-    RHSM_NAMESPACE, RUNTIME_NAMESPACE
+
+from pyanaconda.modules.common.constants.namespaces import (
+    DEVICE_TREE_NAMESPACE,
+    NETWORK_NAMESPACE,
+    PARTITIONING_NAMESPACE,
+    RHSM_NAMESPACE,
+    RUNTIME_NAMESPACE,
+    SECURITY_NAMESPACE,
+    STORAGE_NAMESPACE,
+)
 
 # Runtime objects
 
@@ -145,17 +152,13 @@ RHSM_UNREGISTER = DBusObjectIdentifier(
     basename="Unregister"
 )
 
-RHSM_ATTACH = DBusObjectIdentifier(
-    namespace=RHSM_NAMESPACE,
-    basename="Attach"
-)
-
-RHSM_ENTITLEMENT = DBusObjectIdentifier(
-    namespace=RHSM_NAMESPACE,
-    basename="Entitlement"
-)
-
 RHSM_SYSPURPOSE = DBusObjectIdentifier(
     namespace=RHSM_NAMESPACE,
     basename="Syspurpose"
+)
+
+# Security objects
+CERTIFICATES = DBusObjectIdentifier(
+    namespace=SECURITY_NAMESPACE,
+    basename="Certificates"
 )
