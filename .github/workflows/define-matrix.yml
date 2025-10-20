@@ -38,5 +38,6 @@ jobs:
       - name: Generate matrix data
         id: get_matrix
         run: |
-          MATRIX=$(python3 scripts/define-matrix.py "${{ inputs.target_branch }}" "${{ inputs.use_full_releases }}")
+          # MATRIX=$(python3 scripts/define-matrix.py "${{ inputs.target_branch }}" "${{ inputs.use_full_releases }}")
+          MATRIX=$(python3 scripts/define-matrix.py main)
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
