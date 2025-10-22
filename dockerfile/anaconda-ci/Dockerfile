@@ -1,5 +1,6 @@
 # This container is used for runing Anaconda unit tests in the controlled environment.
 # To find out how to build this container please look on the ./tests/README.rst file.
+# Change file so container gets rebuilt.
 
 # The `image` arg will set base image for the build.
 # possible values:
