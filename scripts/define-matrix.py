@@ -83,6 +83,14 @@ def process_release_names(matrix: List[Dict[str, str]], use_full_releases: bool)
         return matrix
 
 
+def filter_ignored_releases(matrix: List[Dict[str, str]], ignore_releases: List[str]) -> List[Dict[str, str]]:
+    """Filter out releases that should be ignored"""
+    if not ignore_releases:
+        return matrix
+
+    return [entry for entry in matrix if entry['release'] not in ignore_releases]
+
+
 def create_github_matrix(matrix: List[Dict[str, str]]) -> Dict[str, Any]:
     """Create GitHub Actions matrix format"""
     releases = [entry['release'] for entry in matrix]
@@ -98,6 +106,8 @@ def main():
     # Parse command line arguments
     target_branch = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] else None
     use_full_releases = sys.argv[2].lower() == 'true' if len(sys.argv) > 2 else True
+    ignore_releases_str = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else ""
+    ignore_releases = [r.strip() for r in ignore_releases_str.split(',') if r.strip()]
 
     # Load branch variables
     branch_vars = load_branch_variables()
@@ -108,6 +118,9 @@ def main():
 
     # Filter by target branch
     matrix = filter_matrix_by_branch(matrix_by_branch, target_branch)
+
+    # Filter out ignored releases
+    matrix = filter_ignored_releases(matrix, ignore_releases)
 
     # Process release names
     matrix = process_release_names(matrix, use_full_releases)
