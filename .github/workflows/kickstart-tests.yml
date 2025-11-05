@@ -5,6 +5,7 @@
 # ======================================
 # The template is located in: kickstart-tests.yml.j2
 
+# MARK
 # Run kickstart tests in a PR triggered by a comment from an organization member.
 #
 # /kickstart-test keyboard lang
