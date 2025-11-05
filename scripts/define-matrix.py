@@ -8,10 +8,24 @@ for GitHub Actions workflows.
 
 import json
 import sys
+from argparse import ArgumentParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import yaml
+
+
+def parse_args():
+    """Parse command line arguments."""
+    parser = ArgumentParser(description="Generate matrix data for GitHub Actions workflows.")
+    parser.add_argument("target_branch", nargs='?', default=None,
+                        help="Target branch to filter matrix for (optional, defaults to all branches)")
+    parser.add_argument("--no-use-full-releases", dest='use_full_releases', action='store_false', default=True,
+                        help="Replace current branch in 'release' with empty string for consistent check names")
+    parser.add_argument("--skip-releases", default="",
+                        help="Comma-separated list of releases to skip in the matrix output")
+
+    return parser.parse_args()
 
 
 def load_branch_variables() -> Dict[str, Any]:
@@ -104,10 +118,10 @@ def create_github_matrix(matrix: List[Dict[str, str]]) -> Dict[str, Any]:
 def main():
     """Main function to generate matrix data"""
     # Parse command line arguments
-    target_branch = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1] else None
-    use_full_releases = sys.argv[2].lower() == 'true' if len(sys.argv) > 2 else True
-    ignore_releases_str = sys.argv[3] if len(sys.argv) > 3 and sys.argv[3] else ""
-    ignore_releases = [r.strip() for r in ignore_releases_str.split(',') if r.strip()]
+    args = parse_args()
+    target_branch = args.target_branch
+    use_full_releases = args.use_full_releases
+    ignore_releases = [r.strip() for r in args.skip_releases.split(',') if r.strip()]
 
     # Load branch variables
     branch_vars = load_branch_variables()
