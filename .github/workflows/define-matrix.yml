@@ -39,4 +39,5 @@ jobs:
         id: get_matrix
         run: |
           MATRIX=$(python3 scripts/define-matrix.py "${{ inputs.target_branch }}" "${{ inputs.use_full_releases }}")
+          echo "matrix=$MATRIX"
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
