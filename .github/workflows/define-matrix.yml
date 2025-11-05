@@ -62,4 +62,5 @@ jobs:
           fi
 
           MATRIX=$("${args[@]}")
+          echo "matrix=$MATRIX"
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
