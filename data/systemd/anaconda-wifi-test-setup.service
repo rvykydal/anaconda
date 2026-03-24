@@ -1,0 +1,14 @@
+[Unit]
+Description=WiFi test environment setup for Web UI testing
+Requires=basic.target
+After=basic.target
+Before=anaconda.target
+Before=NetworkManager.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/libexec/anaconda/wifi-test-setup
+StandardOutput=journal+console
+StandardError=journal+console
+TimeoutSec=0

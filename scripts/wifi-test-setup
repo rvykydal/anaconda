@@ -1,0 +1,63 @@
+#!/bin/bash
+
+# This test is taken from https://github.com/cockpit-project/cockpit/blob/main/test/verify/check-networkmanager-wifi
+# The webui boot.iso needs to have hostapd and dnsmasq packages added.
+# Run it in the installer at the beginning of the installation.
+# It can be done via ssh to root@<MACHINE_IP> if the inst.sshd option is added.
+
+#systemctl stop firewalld
+
+mkdir -p /run/udev/rules.d
+cat <<EOF > /run/udev/rules.d/99-nm-wifi-test.rules
+ENV{INTERFACE}=="wlan0*", ENV{NM_UNMANAGED}="1"
+EOF
+
+udevadm control --reload
+
+modprobe mac80211_hwsim; while ! [ -e /sys/class/net/wlan0 ]; do sleep 0.1; done
+
+cat <<EOF > /tmp/hostapd.conf
+interface=wlan0
+hw_mode=g
+channel=1
+
+# First network: WPA2-PSK
+ssid=ZE WIFI!
+wpa=2
+wpa_passphrase=12345678
+
+# Second network: WPA2-PSK
+bss=wlan0_0
+ssid=PrivateNet
+wpa=2
+wpa_passphrase=secret123
+
+# Third network: Open
+bss=wlan0_1
+ssid=OpenNet
+
+# Fourth network: second AP for same SSID
+bss=wlan0_2
+ssid=OpenNet
+
+# Fifth network: Hidden WPA2-PSK
+bss=wlan0_3
+ssid=HiddenNet
+ignore_broadcast_ssid=1
+wpa=2
+wpa_passphrase=hidden99
+EOF
+
+hostapd /tmp/hostapd.conf &
+
+until [ -e /sys/class/net/wlan0_3 ]; do sleep 0.1; done
+
+ip addr add 10.0.42.1/24 dev wlan0
+ip addr add 10.0.42.2/24 dev wlan0_0
+ip addr add 10.0.42.3/24 dev wlan0_1
+ip addr add 10.0.42.4/24 dev wlan0_2
+ip addr add 10.0.42.5/24 dev wlan0_3
+
+dnsmasq --keep-in-foreground --log-queries --log-facility=- --conf-file=/dev/null --dhcp-leasefile=/tmp/leases --bind-interfaces --except-interface=lo --interface=wlan0 --interface=wlan0_0 --interface=wlan0_1 --interface=wlan0_2 --interface=wlan0_3 --dhcp-range=10.0.42.10,10.0.42.200 &
+
+
