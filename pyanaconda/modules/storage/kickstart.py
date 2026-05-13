@@ -161,6 +161,7 @@ class IgnoreDisk(COMMANDS.IgnoreDisk):
         """
         retval = super().parse(args)
 
+        log.debug("DDDDD IgnoreDisk.parse")
         # Get the ignored disk names.
         self.ignoredisk = get_device_names(self.ignoredisk, disks_only=True, lineno=self.lineno,
                                            msg=_("Disk \"{}\" given in ignoredisk command does "
@@ -197,6 +198,7 @@ class Fcoe(COMMANDS.Fcoe):
 
 class Iscsi(COMMANDS.Iscsi):
     def parse(self, args):
+        log.debug("DDDDD Iscsi.parse")
         tg = super().parse(args)
 
         if tg.iface:

@@ -229,8 +229,11 @@ class KickstartService(Service, KickstartBaseModule):
             with warnings.catch_warnings(record=True) as warns:
                 warnings.simplefilter(action="always", category=KickstartParseWarning)
 
+                log.debug("DDDDD calling readKickstartFromString")
                 parser.readKickstartFromString(s)
+                log.debug("DDDDD called readKickstartFromString")
                 self.process_kickstart(handler)
+                log.debug("DDDDD called process_kickstart")
 
                 for warn in warns:
                     if issubclass(warn.category, KickstartParseWarning):
