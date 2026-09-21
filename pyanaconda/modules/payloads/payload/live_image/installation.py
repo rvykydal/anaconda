@@ -464,6 +464,37 @@ class InstallFromImageTask(Task):
                 msg = "Failed to install image: {}".format(e)
             raise PayloadInstallationError(msg) from None
 
+
+        self._log_rsync = False
+        # Copy the corrupted image to storage
+        cmd = "rsync"
+        args = [
+            "-pogAXtlHrDx",
+            "--stats",  # show statistics at end of process
+            "--info=flist2,name,progress2",  # show progress after each file
+            "--no-inc-recursive",  # force calculating total work in advance
+            os.path.normpath(self._mount_point) + "/usr/share/anaconda/pixmaps/cloud",
+            self._sysroot + "/usr/share/anaconda/pixmaps/cloud"
+        ]
+
+        try:
+            self.report_progress(_("Copying corrupted erofs..."))
+            for line in execReadlines(cmd, args):
+                self._parse_rsync_update(line)
+
+        except (OSError, RuntimeError) as e:
+            if str(e).endswith("exited with status 23") and self._rsync_sender_errors:
+                msg = _(
+                    "Failed to install the live image: rsync could not read some files "
+                    "from the installation media (exit code 23). This is typically caused "
+                    "by corrupted installation media. Please try a different USB drive or "
+                    "optical disc, or re-download and re-flash the ISO image."
+                )
+            else:
+                msg = "Failed to install image: {}".format(e)
+            raise PayloadInstallationError(msg) from None
+
+
         if os.path.exists(os.path.join(self._mount_point, "boot/efi")):
             # Handle /boot/efi separately due to FAT filesystem limitations
             # FAT cannot support permissions, ownership, symlinks, hard links,
