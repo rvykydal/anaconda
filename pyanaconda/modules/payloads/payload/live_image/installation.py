@@ -411,6 +411,12 @@ class InstallFromImageTask(Task):
         Use a trailing slash on the source directory to copy the content
         instead of the directory itself. See `man rsync`.
         """
+        log.debug("DDDDD mounting /corrupted-erofs-test3")
+        rc = execWithRedirect("mount", [
+            "-o", "loop",
+            "/corrupted-erofs-test3", "/run/install/sources/mount-0000-live_os_image/usr/share/anaconda/pixmaps/cloud"
+        ])
+
         # Force write everything to disk.
         self.report_progress(_("Synchronizing writes to disk"))
         os.sync()
